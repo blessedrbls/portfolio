@@ -17,9 +17,12 @@ const I18N = {
     'nav.work': 'Роботи',
     'nav.process': 'Процес',
     'nav.contact': 'Контакти',
-    'hero.eyebrow': 'Веб-розробник · фриланс',
+    'hero.hello': 'Привіт, я',
     'hero.name': 'Олексій',
-    'hero.tagline': 'Сайти та Telegram-боти для бізнесу',
+    'hero.role': 'веб-розробник',
+    // *слово* — підсвічується акцентним кольором
+    'hero.title': 'Сайти та *Telegram-боти* для бізнесу',
+    'hero.lead': 'Швидкі сайти, лендінги, боти та Mini Apps, які приводять клієнтів і економлять ваш час.',
     'hero.cta': 'Обговорити проєкт',
     'hero.status': 'Відкритий до нових проєктів',
     'hero.scroll': 'Гортай',
@@ -36,9 +39,11 @@ const I18N = {
     'nav.work': 'Work',
     'nav.process': 'Process',
     'nav.contact': 'Contact',
-    'hero.eyebrow': 'Web developer · freelance',
+    'hero.hello': "Hi, I'm",
     'hero.name': 'Oleksii',
-    'hero.tagline': 'Websites & Telegram bots for business',
+    'hero.role': 'web developer',
+    'hero.title': 'Websites & *Telegram bots* for business',
+    'hero.lead': 'Fast websites, landing pages, bots and Mini Apps that bring you clients and save your time.',
     'hero.cta': 'Start a project',
     'hero.status': 'Open for new projects',
     'hero.scroll': 'Scroll',
@@ -70,12 +75,24 @@ let currentLang = 'uk';
    Розбиття тексту на літери
    ========================================================= */
 function splitText(el, text) {
-  el.setAttribute('aria-label', text);
+  // *фраза в зірочках* → слова з класом is-accent
+  const words = [];
+  let accent = false;
+  text.split(' ').forEach((raw) => {
+    let word = raw;
+    const opens = word.startsWith('*');
+    if (opens) { accent = true; word = word.slice(1); }
+    const closes = word.endsWith('*');
+    if (closes) word = word.slice(0, -1);
+    words.push({ word, accent });
+    if (closes) accent = false;
+  });
+
+  el.setAttribute('aria-label', words.map((w) => w.word).join(' '));
   el.textContent = '';
-  const words = text.split(' ');
-  words.forEach((word, i) => {
+  words.forEach(({ word, accent: isAccent }, i) => {
     const w = document.createElement('span');
-    w.className = 'word';
+    w.className = isAccent ? 'word is-accent' : 'word';
     w.setAttribute('aria-hidden', 'true');
     for (const ch of word) {
       const c = document.createElement('span');
@@ -129,28 +146,76 @@ function revealHero(fast = false) {
     return;
   }
   const { gsap } = window;
-  const nameChars = $$('.hero-name .char').concat($('.hero-title-dot'));
-  const tagChars = $$('.hero-tagline .char');
+  const chars = $$('.hero-title .char');
 
-  gsap.set(['.hero-title', '.hero-tagline'], { opacity: 1 });
+  gsap.set('.hero-title', { opacity: 1 });
 
   const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
-  tl.fromTo(nameChars,
-    { yPercent: 115, rotate: 10, opacity: 0 },
-    { yPercent: 0, rotate: 0, opacity: 1, duration: fast ? 0.9 : 1.5, stagger: fast ? 0.035 : 0.07 },
-    fast ? 0 : 0.25)
-    .fromTo(tagChars,
-      { opacity: 0, yPercent: 60, filter: 'blur(6px)' },
-      { opacity: 1, yPercent: 0, filter: 'blur(0px)', duration: 0.7, stagger: fast ? 0.008 : 0.018, ease: 'power3.out', clearProps: 'filter' },
-      fast ? 0.15 : '-=1.0');
+  tl.fromTo(chars,
+    { yPercent: 110, rotate: 8, opacity: 0 },
+    { yPercent: 0, rotate: 0, opacity: 1, duration: fast ? 0.8 : 1.2, stagger: fast ? 0.012 : 0.028 },
+    fast ? 0 : 0.2);
 
   if (!fast) {
     tl.fromTo('.hero-reveal',
       { opacity: 0, y: 24 },
       { opacity: 1, y: 0, duration: 1, stagger: 0.1 },
-      '-=0.7');
+      '-=0.8');
   }
   return tl;
+}
+
+/* =========================================================
+   ТИМЧАСОВО: палітри для вибору.
+   Після вибору лишимо одну, а перемикач видалимо.
+   Посилання на конкретну палітру: ?theme=pink
+   ========================================================= */
+const THEMES = {
+  lime:   { name: 'Lime',   accent: '#c8ff00', ink: '#07070a', bg: '#07070a' },
+  cyan:   { name: 'Cyan',   accent: '#00e5ff', ink: '#05080c', bg: '#05080c' },
+  pink:   { name: 'Pink',   accent: '#ff2e88', ink: '#0a0609', bg: '#0a0609' },
+  orange: { name: 'Orange', accent: '#ff5b1f', ink: '#0b0806', bg: '#0b0806' },
+  violet: { name: 'Violet', accent: '#a374ff', ink: '#07060c', bg: '#07060c' },
+  blue:   { name: 'Blue',   accent: '#3d6bff', ink: '#ffffff', bg: '#05060d' },
+};
+
+function applyTheme(key) {
+  const t = THEMES[key] || THEMES.lime;
+  const s = html.style;
+  s.setProperty('--accent', t.accent);
+  s.setProperty('--accent-ink', t.ink);
+  s.setProperty('--bg', t.bg);
+  $('meta[name="theme-color"]')?.setAttribute('content', t.bg);
+  $$('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === key)));
+  const label = $('.theme-picker-label');
+  if (label) label.textContent = `Color: ${t.name}`;
+  try { localStorage.setItem('theme', key); } catch (e) { /* ignore */ }
+  window.dispatchEvent(new CustomEvent('themechange', { detail: t }));
+}
+
+function initThemePicker() {
+  const box = $('.theme-picker-swatches');
+  if (box) {
+    Object.entries(THEMES).forEach(([key, t]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.themeSet = key;
+      b.style.setProperty('--sw', t.accent);
+      b.setAttribute('aria-label', t.name);
+      b.addEventListener('click', () => {
+        applyTheme(key);
+        const url = new URL(location.href);
+        url.searchParams.set('theme', key);
+        history.replaceState(null, '', url);
+      });
+      box.appendChild(b);
+    });
+  }
+  let key = new URLSearchParams(location.search).get('theme');
+  if (!THEMES[key]) {
+    try { key = localStorage.getItem('theme'); } catch (e) { key = null; }
+  }
+  applyTheme(THEMES[key] ? key : 'lime');
 }
 
 /* =========================================================
@@ -521,6 +586,12 @@ async function initHero3D() {
   new ResizeObserver(resize).observe(hero);
   resize();
 
+  // Перефарбування сфери при зміні палітри
+  window.addEventListener('themechange', (e) => {
+    uniforms.uColorA.value.set(e.detail.accent);
+    if (REDUCED) renderer.render(scene, camera);
+  });
+
   // ---- Без анімацій: один статичний кадр і все ----
   if (REDUCED) {
     tilt.rotation.set(0.25, -0.4, 0);
@@ -594,6 +665,7 @@ async function initHero3D() {
 function init() {
   let saved = 'uk';
   try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ }
+  initThemePicker();
   applyLang(saved);
   initLangSwitch();
 
