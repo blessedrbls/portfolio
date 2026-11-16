@@ -51,7 +51,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 
-  <link rel="stylesheet" href="style.css?v=37">
+  <link rel="stylesheet" href="style.css?v=48">
 
   <!-- Three.js як ES-модуль (фіксована версія) -->
   <script type="importmap">
@@ -63,7 +63,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=46"></script>
+  <script type="module" src="main.js?v=48"></script>
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">Перейти до змісту</a>
@@ -79,7 +79,7 @@
 
   <!-- Кастомний курсор (лише для миші) -->
   <div class="cursor" aria-hidden="true">
-    <div class="cursor-ring"><span></span></div>
+    <div class="cursor-ring"><span></span><b class="cursor-label"></b></div>
     <div class="cursor-dot"></div>
   </div>
 
@@ -231,7 +231,7 @@
         </div>
       </div>
       <div class="work-viewport">
-        <ul class="work-track" role="list" tabindex="0" aria-label="Проєкти" data-i18n-label="work.list"></ul>
+        <ul class="work-track" role="list" tabindex="0" data-cursor-label="drag" aria-label="Проєкти" data-i18n-label="work.list"></ul>
       </div>
       <div class="work-progress" aria-hidden="true"><span></span></div>
     </section>
@@ -318,5 +318,30 @@
     <a href="https://github.com/blessedrbls" target="_blank" rel="noopener" class="footer-link">GitHub ↗</a>
     <a href="#top" class="footer-link" data-i18n="footer.top">Нагору ↑</a>
   </footer>
+
+  <!-- Живе демо проєкту просто на сайті (відкривається кнопкою «Демо») -->
+  <div class="preview" hidden role="dialog" aria-modal="true" aria-labelledby="preview-title">
+    <div class="preview-backdrop" data-preview-close></div>
+    <div class="preview-panel">
+      <div class="preview-bar">
+        <p class="preview-title" id="preview-title"></p>
+        <div class="preview-actions">
+          <a class="preview-open mono" href="#" target="_blank" rel="noopener"></a>
+          <button type="button" class="preview-close" data-preview-close aria-label="Закрити демо" data-i18n-label="preview.close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="preview-stage">
+        <div class="preview-device">
+          <div class="preview-chrome" aria-hidden="true"><i></i><i></i><i></i><span class="preview-url mono"></span></div>
+          <div class="preview-screen">
+            <p class="preview-loading mono" data-i18n="preview.loading">Завантажую демо…</p>
+            <iframe title="" referrerpolicy="no-referrer"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

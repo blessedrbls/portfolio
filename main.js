@@ -11,11 +11,14 @@
 //   kind:  вигляд заглушки — 'site' | 'bot' | 'miniapp'
 //   motif: значок на заглушці — 'cup' | 'calendar' | 'barber' | 'play' | 'bag'
 //   demo:  посилання «Демо» (null — кнопки не буде), code: посилання «Код»
+//   preview: живе демо просто на сайті — { url, device: 'phone' | 'desktop' } (необов'язково)
+//   tint:  колір, у який забарвлюється сфера при наведенні на картку; pulse: true — сфера «пульсує»
 const PROJECTS = [
   {
     kind: 'miniapp',
     motif: 'cup',
     image: 'images/coffee-miniapp.webp',
+    tint: '#d9a066',
     type: { uk: 'Mini App', en: 'Mini App' },
     title: { uk: "Telegram Mini App для кав'ярні", en: 'Coffee shop Telegram Mini App' },
     desc: {
@@ -24,12 +27,14 @@ const PROJECTS = [
     },
     tags: ['Mini App', 'JavaScript', 'Python', 'aiogram 3'],
     demo: 'https://t.me/coffee_miniapp_bot_bot',
+    preview: { url: 'https://blessedrbls.github.io/coffee-miniapp/', device: 'phone' },
     code: 'https://github.com/blessedrbls/coffee-miniapp',
   },
   {
     kind: 'bot',
     motif: 'calendar',
     image: 'images/booking-bot.webp',
+    tint: '#5aa9ff', pulse: true,
     type: { uk: 'Telegram-бот', en: 'Telegram bot' },
     title: { uk: 'Бот онлайн-запису в барбершоп', en: 'Barbershop booking bot' },
     desc: {
@@ -44,6 +49,7 @@ const PROJECTS = [
     kind: 'site',
     motif: 'barber',
     image: 'images/barbershop-site.webp',
+    tint: '#d4b05a',
     type: { uk: 'Сайт', en: 'Website' },
     title: { uk: 'Сайт барбершопу', en: 'Barbershop website' },
     desc: {
@@ -52,12 +58,14 @@ const PROJECTS = [
     },
     tags: ['HTML/CSS/JS', 'Cloudflare Workers', 'D1'],
     demo: 'https://blessedrbls.github.io/barbershop-site/',
+    preview: { url: 'https://blessedrbls.github.io/barbershop-site/', device: 'desktop' },
     code: 'https://github.com/blessedrbls/barbershop-site',
   },
   {
     kind: 'site',
     motif: 'play',
     image: 'images/landing-course.webp',
+    tint: '#4c7dff',
     type: { uk: 'Лендінг', en: 'Landing page' },
     title: { uk: 'Лендінг онлайн-курсу', en: 'Online course landing page' },
     desc: {
@@ -66,12 +74,14 @@ const PROJECTS = [
     },
     tags: ['HTML', 'CSS', 'JavaScript'],
     demo: 'https://blessedrbls.github.io/landing-course/',
+    preview: { url: 'https://blessedrbls.github.io/landing-course/', device: 'desktop' },
     code: 'https://github.com/blessedrbls/landing-course',
   },
   {
     kind: 'bot',
     motif: 'bag',
     image: 'images/shop-bot.webp',
+    tint: '#4fd1a5',
     type: { uk: 'Telegram-бот', en: 'Telegram bot' },
     title: { uk: 'Бот-магазин', en: 'Telegram shop bot' },
     desc: {
@@ -133,6 +143,14 @@ const I18N = {
     'contact.lead': 'Напишіть мені — обговоримо ваш проєкт і я підкажу, з чого почати.',
     'footer.name': 'Олексій',
     'footer.top': 'Нагору ↑',
+    'preview.close': 'Закрити демо',
+    'preview.tab': 'Відкрити в новій вкладці ↗',
+    'preview.telegram': 'Відкрити в Telegram ↗',
+    'preview.loading': 'Завантажую демо…',
+    'cursor.demo': 'Демо',
+    'cursor.drag': 'Тягни',
+    'cursor.click': 'Клікни',
+    'egg.toast': '✦ Ви знайшли секрет — дякую, що зазирнули!',
     'statement.text': 'Кожен *сайт* і кожен *бот*, який я роблю, має одну мету — *приводити вам клієнтів*.',
   },
   en: {
@@ -181,6 +199,14 @@ const I18N = {
     'contact.lead': "Message me — we'll talk about your project and I'll suggest where to start.",
     'footer.name': 'Oleksii',
     'footer.top': 'Back to top ↑',
+    'preview.close': 'Close demo',
+    'preview.tab': 'Open in a new tab ↗',
+    'preview.telegram': 'Open in Telegram ↗',
+    'preview.loading': 'Loading the demo…',
+    'cursor.demo': 'Demo',
+    'cursor.drag': 'Drag',
+    'cursor.click': 'Click',
+    'egg.toast': '✦ You found a secret — thanks for looking around!',
     'statement.text': 'Every *website* and every *bot* I build has one job: *bring you clients*.',
   },
 };
@@ -401,12 +427,28 @@ function initCursor() {
     }
   }, { passive: true });
 
+  // Підказка в кільці курсора: «Демо» над картинкою проєкту, «Тягни» над каруселлю, «Клікни» над сферою
+  const label = $('.cursor-label', cursor);
+  let overInteractive = false;   // над посиланням / кнопкою — звичайне збільшення без підказки
+  let elementLabel = '';         // підказка від елемента під курсором (data-cursor-label)
+  let shownLabel = '';
+  const setLabel = (key) => {
+    if (key === shownLabel) return;
+    shownLabel = key;
+    const dict = I18N[currentLang] || I18N.uk;
+    if (key && label) label.textContent = dict[`cursor.${key}`] || '';
+    cursor.classList.toggle('has-label', !!key);
+  };
+
   function paint() {
     dirty = false;
     const t = `translate3d(${x}px, ${y}px, 0)`;
     dot.style.transform = t;
     ring.style.transform = t;
     cursor.classList.add('is-visible');
+    // над сферою (і не над текстом-посиланням) — підказка «Клікни»
+    const overSphere = !overInteractive && !elementLabel && window.__sphere?.hit(x, y);
+    setLabel(overInteractive ? '' : (elementLabel || (overSphere ? 'click' : '')));
   }
 
   document.addEventListener('pointerleave', () => cursor.classList.remove('is-visible'));
@@ -416,7 +458,11 @@ function initCursor() {
   // Збільшення над інтерактивними елементами
   document.addEventListener('pointerover', (e) => {
     const hit = e.target.closest('a, button, [data-cursor]');
+    const labelled = e.target.closest('[data-cursor-label]');
+    overInteractive = !!hit;
+    elementLabel = !hit && labelled ? labelled.dataset.cursorLabel : '';
     cursor.classList.toggle('is-hover', !!hit);
+    paint();
   });
 }
 
@@ -744,7 +790,7 @@ function renderProjects() {
 
   track.innerHTML = PROJECTS.map((p, i) => `
     <li class="project-card">
-      <div class="project-media">
+      <div class="project-media"${p.preview || p.demo ? ' data-cursor-label="demo"' : ''}>
         <div class="project-media-inner">
           ${p.image
             ? `<img src="${esc(p.image)}" alt="" loading="lazy" decoding="async" data-ph="${i}">`
@@ -757,7 +803,7 @@ function renderProjects() {
         <p class="project-desc">${both(p.desc)}</p>
         <ul class="project-tags" role="list">${p.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
         <div class="project-actions">
-          ${p.demo ? `<a class="project-btn project-btn--demo" href="${esc(p.demo)}" target="_blank" rel="noopener">${both({ uk: 'Демо', en: 'Demo' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
+          ${p.demo ? `<a class="project-btn project-btn--demo" href="${esc(p.demo)}" target="_blank" rel="noopener"${p.preview ? ` data-preview="${i}"` : ''}>${both({ uk: 'Демо', en: 'Demo' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
           ${p.code ? `<a class="project-btn project-btn--code" href="${esc(p.code)}" target="_blank" rel="noopener">${both({ uk: 'Код', en: 'Code' })}<span class="sr-only">: ${both(p.title)}</span>${codeIcon}</a>` : ''}
         </div>
       </div>
@@ -776,6 +822,202 @@ function renderProjects() {
 //   телефон / тачпад — свайп убік; миша — перетягування, стрілки ← →, Shift + колесо;
 //   клавіатура — фокус на стрічці й стрілки на клавіатурі.
 // Звичайне колесо миші над каруселлю гортає сторінку вниз, як скрізь.
+/* =========================================================
+   Живе демо: кнопка «Демо» відкриває проєкт у рамці телефона / браузера просто на сайті.
+   Ctrl/Cmd/Shift-клік або середня кнопка — як звичайне посилання (нова вкладка).
+   ========================================================= */
+function initPreview() {
+  const box = $('.preview');
+  const track = $('.work-track');
+  if (!box || !track) return;
+  const device = $('.preview-device', box);
+  const iframe = $('iframe', box);
+  const title = $('.preview-title', box);
+  const openLink = $('.preview-open', box);
+  const url = $('.preview-url', box);
+  const loading = $('.preview-loading', box);
+  const closeBtn = $('.preview-close', box);
+  const DESK_W = 1280;
+  const DESK_H = 800;
+  let lastTrigger = null;
+  let current = null;
+
+  // Сайт показуємо в справжньому десктопному вигляді (1280×800) і зменшуємо під екран
+  const fit = () => {
+    if (!current) return;
+    const stage = $('.preview-stage', box).getBoundingClientRect();
+    const narrow = window.innerWidth <= 700;
+    if (current.device === 'desktop' && !narrow) {
+      const chrome = 36;
+      const s = Math.min(stage.width / DESK_W, (stage.height - chrome) / DESK_H, 1);
+      device.style.width = `${Math.round(DESK_W * s)}px`;
+      device.style.height = `${Math.round(DESK_H * s + chrome)}px`;
+      Object.assign(iframe.style, { width: `${DESK_W}px`, height: `${DESK_H}px`, transform: `scale(${s})` });
+    } else {
+      device.style.width = '';
+      device.style.height = '';
+      Object.assign(iframe.style, { width: '100%', height: '100%', transform: '' });
+    }
+  };
+
+  const open = (p, trigger) => {
+    current = p.preview;
+    lastTrigger = trigger;
+    const lang = currentLang;
+    const dict = I18N[lang] || I18N.uk;
+    title.textContent = p.title[lang] || p.title.uk;
+    // Для Mini App кнопка веде в Telegram (там вона живе), для сайтів — у нову вкладку
+    const isTelegram = /t\.me\//.test(p.demo || '');
+    openLink.href = isTelegram ? p.demo : current.url;
+    openLink.textContent = isTelegram ? dict['preview.telegram'] : dict['preview.tab'];
+    url.textContent = current.url.replace(/^https?:\/\//, '');
+    iframe.title = title.textContent;
+    device.classList.toggle('is-phone', current.device === 'phone');
+    device.classList.toggle('is-desktop', current.device !== 'phone');
+    loading.hidden = false;
+    iframe.style.opacity = '0';
+    iframe.onload = () => { loading.hidden = true; iframe.style.opacity = '1'; };
+    iframe.src = current.url;
+
+    box.hidden = false;
+    html.classList.add('preview-open');
+    lenis?.stop();
+    fit();
+    closeBtn.focus({ preventScroll: true });
+    if (!REDUCED && HAS_GSAP) {
+      window.gsap.fromTo($('.preview-backdrop', box), { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power2.out' });
+      window.gsap.fromTo([$('.preview-bar', box), device], { opacity: 0, y: 40, scale: 0.96 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'expo.out', stagger: 0.05 });
+    }
+  };
+
+  const close = () => {
+    if (box.hidden) return;
+    const finish = () => {
+      box.hidden = true;
+      iframe.src = 'about:blank';   // зупиняємо демо, щоб не працювало у фоні
+      html.classList.remove('preview-open');
+      lenis?.start();
+      current = null;
+      lastTrigger?.focus({ preventScroll: true });
+    };
+    if (!REDUCED && HAS_GSAP) {
+      window.gsap.to([$('.preview-bar', box), device], { opacity: 0, y: 30, scale: 0.97, duration: 0.3, ease: 'power2.in' });
+      window.gsap.to($('.preview-backdrop', box), { opacity: 0, duration: 0.35, ease: 'power2.in', onComplete: finish });
+    } else {
+      finish();
+    }
+  };
+
+  track.addEventListener('click', (e) => {
+    // Клік по картинці проєкту — теж відкриває демо (живе, якщо є; інакше — посилання)
+    const media = e.target.closest('.project-media');
+    if (media) {
+      const card = media.closest('.project-card');
+      const p = PROJECTS[[...track.children].indexOf(card)];
+      if (!p) return;
+      if (p.preview) open(p, $('a[data-preview]', card) || card);
+      else if (p.demo) window.open(p.demo, '_blank', 'noopener');
+      return;
+    }
+    const a = e.target.closest('a[data-preview]');
+    if (!a) return;
+    // Ctrl/Cmd/Shift-клік або середня кнопка — звичайна поведінка посилання
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    open(PROJECTS[Number(a.dataset.preview)], a);
+  });
+  $$('[data-preview-close]', box).forEach((el) => el.addEventListener('click', close));
+  document.addEventListener('keydown', (e) => {
+    if (box.hidden) return;
+    if (e.key === 'Escape') close();
+    // Tab лишається всередині вікна: посилання → закрити → демо
+    if (e.key === 'Tab') {
+      const items = [openLink, closeBtn, iframe].filter((el) => el.offsetParent !== null);
+      const i = items.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); items[items.length - 1].focus(); }
+      else if (!e.shiftKey && i === items.length - 1) { e.preventDefault(); items[0].focus(); }
+    }
+  });
+  window.addEventListener('resize', fit);
+  // курсор сайту ховаємо, коли миша над демо (там свій, системний курсор)
+  iframe.addEventListener('mouseenter', () => $('.cursor')?.classList.remove('is-visible'));
+}
+
+/* =========================================================
+   Сфера реагує на сайт:
+   • наведення на картку проєкту — сфера забарвлюється в колір проєкту (бот запису ще й «пульсує»);
+   • клік по сфері — ударна хвиля;
+   • пасхалка: набрати «hello» / «привіт» або 5 разів швидко клікнути на логотип —
+     феєрверк частинок і гіперстрибок крізь зорі.
+   ========================================================= */
+function initSphereFun() {
+  const track = $('.work-track');
+  const sphere = () => window.__sphere;   // з'являється, коли завантажиться 3D
+
+  // 1) Колір проєкту при наведенні (лише миша — на телефоні «наведення» немає)
+  if (track && !IS_TOUCH) {
+    let currentCard = null;
+    track.addEventListener('pointerover', (e) => {
+      const card = e.target.closest('.project-card');
+      if (card === currentCard) return;
+      currentCard = card;
+      const p = card ? PROJECTS[[...track.children].indexOf(card)] : null;
+      sphere()?.tint(p?.tint || null, !!p?.pulse);
+    });
+    track.addEventListener('pointerleave', () => { currentCard = null; sphere()?.tint(null); });
+  }
+
+  // 2) Клік по сфері (а не по посиланню / кнопці / демо) — ударна хвиля
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('a, button, input, textarea, iframe, .preview, .project-card')) return;
+    if (sphere()?.hit(e.clientX, e.clientY)) sphere().burst(1);
+  });
+
+  // 3) Пасхалка
+  const toast = document.createElement('div');
+  toast.className = 'egg-toast mono';
+  toast.setAttribute('role', 'status');
+  document.body.appendChild(toast);
+  let toastTimer = 0;
+  let celebrating = false;
+  const celebrate = () => {
+    if (celebrating) return;
+    celebrating = true;
+    const dict = I18N[currentLang] || I18N.uk;
+    toast.textContent = dict['egg.toast'];
+    toast.classList.add('is-shown');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('is-shown'), 3200);
+    const s = sphere();
+    if (s && !REDUCED) {
+      // кілька «залпів» різними кольорами, потім гіперстрибок
+      const colors = ['#ff5bd6', '#5aa9ff', '#ffd166', '#4fd1a5'];
+      colors.forEach((c, i) => setTimeout(() => { s.tint(c); s.burst(1.1 + i * 0.15); }, i * 380));
+      setTimeout(() => s.hyper(2.2), 400);
+      setTimeout(() => s.tint(null), colors.length * 380 + 600);
+    }
+    setTimeout(() => { celebrating = false; }, 3500);
+  };
+
+  // «hello» або «привіт» з клавіатури (не коли друкуєш у полі вводу)
+  let typed = '';
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest?.('input, textarea, [contenteditable]') || e.key.length !== 1) return;
+    typed = (typed + e.key.toLowerCase()).slice(-12);
+    if (typed.endsWith('hello') || typed.endsWith('привіт')) { typed = ''; celebrate(); }
+  });
+
+  // 5 швидких кліків по логотипу
+  const logo = $('.logo');
+  let clicks = [];
+  logo?.addEventListener('click', () => {
+    const t = performance.now();
+    clicks = clicks.filter((c) => t - c < 1600).concat(t);
+    if (clicks.length >= 5) { clicks = []; celebrate(); }
+  });
+}
+
 function initWork() {
   const track = $('.work-track');
   if (!track) return;
@@ -934,6 +1176,7 @@ const VERTEX = /* glsl */`
   uniform float uFlow;       // швидкість течії шуму
   uniform float uGlow;       // додаткове фіолетове світіння
   uniform float uDim;        // загальна яскравість (за текстом — тьмяніше)
+  uniform float uBurst;      // 0..1 — «ударна хвиля» від кліку / пасхалки
   attribute float aRandom;
   varying float vGlow;
   varying float vAlpha;
@@ -949,6 +1192,7 @@ const VERTEX = /* glsl */`
 
     float radius = (1.0 + disp) * (1.0 + aRandom * uSpread) * mix(0.35, 1.0, uIntro) * (1.0 + uScroll * 0.35);
     vec3 pos = n * radius;
+    pos += n * uBurst * (0.5 + aRandom * 1.7);     // частинки розлітаються й повертаються
 
     // Вибух: кожна точка летить назовні зі своєю швидкістю й трохи закручується
     float e = uExplode * uExplode;
@@ -967,9 +1211,9 @@ const VERTEX = /* glsl */`
     mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    gl_PointSize = uSize * uPixelRatio * (0.55 + aRandom * 0.9) * (1.0 + m * 1.6) * (1.0 + e * 0.9) / -mv.z;
+    gl_PointSize = uSize * uPixelRatio * (0.55 + aRandom * 0.9) * (1.0 + m * 1.6) * (1.0 + e * 0.9) * (1.0 + uBurst * 0.6) / -mv.z;
 
-    vGlow  = clamp(disp * 2.6 + m * 1.6 + e * 0.9 + uGlow, 0.0, 1.0);
+    vGlow  = clamp(disp * 2.6 + m * 1.6 + e * 0.9 + uGlow + uBurst * 0.9, 0.0, 1.0);
     vAlpha = mix(0.18, 1.0, smoothstep(7.4, 5.0, -mv.z)) * uIntro * (1.0 - smoothstep(0.55, 1.0, uExplode)) * uDim;
   }
 `;
@@ -1095,6 +1339,7 @@ async function initHero3D() {
     uFlow: { value: 1 },
     uGlow: { value: 0 },
     uDim: { value: 1 },
+    uBurst: { value: 0 },
     uIntro: { value: STATIC ? 1 : 0 },
     uColorA: { value: new THREE.Color(accent) },
     uColorB: { value: new THREE.Color('#a4a4b2') },
@@ -1364,6 +1609,42 @@ async function initHero3D() {
     }
   };
 
+  // ---- «Пульт» сфери для решти сайту: наведення на проєкти, клік по сфері, пасхалка ----
+  const baseColor = new THREE.Color(accent);
+  const tintTarget = baseColor.clone();
+  const burstState = { v: 0 };
+  let pulse = 0;
+  let pulseTarget = 0;
+  let hyper = 0;          // скільки секунд ще триває «гіперстрибок»
+  const tmpV = new THREE.Vector3();
+  const sphereScreen = () => {
+    root.getWorldPosition(tmpV).project(camera);
+    const H = window.innerHeight;
+    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
+    return { x: ((tmpV.x + 1) / 2) * window.innerWidth, y: ((1 - tmpV.y) / 2) * H, r: moodNow.s * 1.2 * (H / (2 * halfH)) };
+  };
+  window.__sphere = {
+    tint(hex, doPulse = false) {            // забарвити сферу в колір проєкту (null — повернути свій)
+      tintTarget.set(hex || baseColor);
+      pulseTarget = doPulse ? 1 : 0;
+      lastActive = performance.now();
+    },
+    burst(strength = 1) {                    // ударна хвиля: частинки розлітаються й пружно повертаються
+      lastActive = performance.now();
+      if (!HAS_GSAP) return;
+      window.gsap.killTweensOf(burstState);
+      window.gsap.timeline()
+        .to(burstState, { v: strength, duration: 0.3, ease: 'power3.out' })
+        .to(burstState, { v: 0, duration: 1.6, ease: 'elastic.out(1, 0.4)' });
+    },
+    hyper(seconds = 1.8) { hyper = seconds; lastActive = performance.now(); }, // ривок крізь зорі
+    hit(x, y) {                              // чи курсор над сферою (для кліку й підказки курсора)
+      if (!GUIDE || uniforms.uExplode.value > 0.3) return false;
+      const sc = sphereScreen();
+      return Math.hypot(x - sc.x, y - sc.y) < sc.r;
+    },
+  };
+
   const lerp = THREE.MathUtils.lerp;
   const frame = () => {
     if (!running) return;
@@ -1378,6 +1659,7 @@ async function initHero3D() {
     const q = QUALITY[level];
     const quiet = now - lastActive;
     const introDone = uniforms.uIntro.value >= 0.999;
+    if (html.classList.contains('preview-open')) return; // поки відкрите живе демо — сцена на паузі
     if (GUIDE && q.lite && quiet > 1200 && introDone && Math.abs(window.scrollY - ySmooth) < 0.5) return;
     const minMs = quiet > 2500 ? Math.max(33, q.frameMs) : q.frameMs;
     if (now - lastRender < minMs) return;
@@ -1424,8 +1706,12 @@ async function initHero3D() {
     // Політ крізь зорі: повільно пливемо завжди, а скрол розганяє (униз — уперед, угору — назад)
     const v = scrollSpeed.smooth;                                   // px/с
     const speed = THREE.MathUtils.clamp(v / 2600, -1, 1);
-    starUniforms.uSpeed.value += (speed - starUniforms.uSpeed.value) * kf * 1.5;
-    starUniforms.uTravel.value += dt * (0.012 + v * 0.00011);
+    // гіперстрибок (пасхалка): різкий розгін, потім плавне гальмування
+    if (hyper > 0) hyper = Math.max(0, hyper - dt);
+    const hyperK = Math.min(1, hyper * 1.2);
+    const speedTarget = Math.max(Math.abs(speed), hyperK) * (speed < 0 && hyperK === 0 ? -1 : 1);
+    starUniforms.uSpeed.value += (speedTarget - starUniforms.uSpeed.value) * kf * 1.5;
+    starUniforms.uTravel.value += dt * (0.012 + v * 0.00011 + hyperK * 1.1);
 
     // Сфера «переслідує»: при швидкому польоті трохи відстає й відходить углиб, потім наздоганяє
     chase.y += ((-starUniforms.uSpeed.value * 0.35) - chase.y) * kf;
@@ -1433,7 +1719,13 @@ async function initHero3D() {
 
     root.position.set(moodNow.x, moodNow.y + chase.y, chase.z);
     root.scale.set(moodNow.s * moodNow.sx, moodNow.s * moodNow.sy, moodNow.s);
-    uniforms.uAmp.value = moodNow.amp;
+    // колір і пульс від наведеного проєкту, ударна хвиля
+    pulse += (pulseTarget - pulse) * kf;
+    uniforms.uColorA.value.lerp(tintTarget, kf * 0.8);
+    uniforms.uBurst.value = burstState.v;
+    uniforms.uAmp.value = moodNow.amp + pulse * Math.sin(uniforms.uTime.value * 5) * 0.07;
+    // поки триває будь-який ефект — не «засинаємо» (важливо для слабких ПК)
+    if (burstState.v > 0.001 || hyper > 0 || pulse > 0.01 || Math.abs(uniforms.uColorA.value.r - tintTarget.r) > 0.004) lastActive = now;
     uniforms.uFreq.value = moodNow.freq;
     uniforms.uSpread.value = moodNow.spread;
     uniforms.uFlow.value = moodNow.flow;
@@ -1527,6 +1819,8 @@ function init() {
   let saved = 'uk';
   try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ }
   renderProjects();
+  initPreview();
+  initSphereFun();
   applyLang(saved);
   initLangSwitch();
 

@@ -142,6 +142,31 @@ html.lenis, html.lenis body { height: auto; }
   border-color: var(--accent);
 }
 .cursor.is-hover .cursor-dot { opacity: 0; }
+
+/* Підказка в кільці курсора: «Демо», «Тягни», «Клікни» */
+.cursor-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  transition: opacity 0.25s, transform 0.4s var(--ease-out);
+  pointer-events: none;
+}
+.cursor.has-label .cursor-ring span {
+  transform: scale(2.1);
+  background: var(--accent);
+  border-color: transparent;
+}
+.cursor.has-label .cursor-label { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.cursor.has-label .cursor-dot { opacity: 0; }
 .cursor.is-down .cursor-ring span { transform: scale(0.75); }
 .cursor.is-hover.is-down .cursor-ring span { transform: scale(1.45); }
 
@@ -998,6 +1023,177 @@ html:not(.fx) .process-line-fill { stroke-dashoffset: 0; }
 .lang-fade .project-body,
 .lang-fade .contact-title { opacity: 0 !important; }
 .lang-fade .hero-title { opacity: 1 !important; } /* заголовок першого екрана перебудовується з власною анімацією */
+
+/* =========================================================
+   Живе демо проєкту у вікні поверх сайту
+   ========================================================= */
+.preview[hidden] { display: none; }
+.preview {
+  position: fixed;
+  inset: 0;
+  z-index: 240;                 /* над шапкою, під курсором */
+  display: flex;
+}
+.preview-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.86); /* без backdrop-filter — розмиття дороге для слабких ПК */
+}
+.preview-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: clamp(0.75rem, 2vw, 1.5rem) var(--gutter) clamp(1rem, 3vh, 2rem);
+  pointer-events: none;         /* кліки повз пристрій — на фон, щоб закрити */
+}
+.preview-bar, .preview-device { pointer-events: auto; }
+.preview-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: clamp(0.75rem, 2vh, 1.25rem);
+}
+.preview-title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+  letter-spacing: -0.02em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.preview-actions { display: flex; align-items: center; gap: 0.6rem; flex: 0 0 auto; }
+.preview-open {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--fg);
+  transition: border-color 0.3s, color 0.3s;
+}
+.preview-open:hover { border-color: var(--accent); color: var(--accent); }
+.preview-close {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.preview-close svg { width: 1.1rem; height: 1.1rem; }
+
+.preview-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.preview-device {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0d0c12;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 40px 120px -30px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.preview-screen { position: relative; flex: 1; overflow: hidden; background: #111; }
+.preview-screen iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  background: #fff;
+  transform-origin: 0 0;
+}
+.preview-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+/* Телефон: рамка з «чубчиком» */
+.preview-device.is-phone {
+  height: min(100%, 860px);
+  aspect-ratio: 390 / 844;
+  border-radius: 46px;
+  border: 10px solid #141218;
+  outline: 1px solid rgba(255, 255, 255, 0.14);
+}
+.preview-device.is-phone .preview-chrome { display: none; }
+.preview-device.is-phone .preview-screen { border-radius: 36px; }
+.preview-device.is-phone .preview-screen iframe { width: 100%; height: 100%; }
+
+/* Браузер: смужка з крапками й адресою, сторінка в справжньому десктопному вигляді (масштабована JS) */
+.preview-device.is-desktop { border-radius: 14px; }
+.preview-chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: 36px;
+  padding: 0 0.9rem;
+  background: #17151d;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.preview-chrome i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); }
+.preview-url {
+  margin-left: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.66rem;
+  color: var(--muted);
+  text-transform: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Телефон-екран: без рамок, демо на весь доступний простір */
+@media (max-width: 700px) {
+  .preview-device.is-phone,
+  .preview-device.is-desktop {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    outline: 0;
+    border-radius: 18px;
+  }
+  .preview-device.is-phone .preview-screen { border-radius: 0; }
+  .preview-device .preview-chrome { display: none; }
+  .preview-open { padding: 0.55rem 0.8rem; font-size: 0.62rem; }
+}
+
+html.preview-open { overflow: hidden; }
+
+/* Повідомлення пасхалки */
+.egg-toast {
+  position: fixed;
+  left: 50%;
+  bottom: clamp(1rem, 4vh, 2rem);
+  z-index: 260;
+  max-width: calc(100% - 2rem);
+  padding: 0.8rem 1.2rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.9);
+  color: var(--fg);
+  font-size: 0.72rem;
+  text-align: center;
+  opacity: 0;
+  transform: translate(-50%, 20px);
+  transition: opacity 0.4s, transform 0.5s var(--ease-out);
+  pointer-events: none;
+}
+.egg-toast.is-shown { opacity: 1; transform: translate(-50%, 0); }
 
 /* ---------- Мобільні / сенсорні ---------- */
 @media (hover: none), (pointer: coarse) {
