@@ -572,19 +572,62 @@ html.lenis, html.lenis body { height: auto; }
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 2rem;
+  gap: 1.5rem 2rem;
+  flex-wrap: wrap;
 }
-.work-hint { display: none; align-items: center; gap: 0.75rem; color: var(--muted); }
-.work-hint-arrow { color: var(--accent); font-size: 1.1rem; }
-
-/* Базовий вигляд (телефон, «без анімацій», без JS): звичайна сітка карток */
-.work-track {
+.work-controls { display: flex; align-items: center; gap: 1rem; }
+.work-hint { color: var(--muted); }
+.work-arrows { display: flex; gap: 0.5rem; }
+.work-arrow {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
-  gap: clamp(1rem, 1.6vw, 1.5rem);
-  margin-top: clamp(2.5rem, 6vh, 4rem);
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--fg);
+  transition: border-color 0.3s, background-color 0.3s, color 0.3s, opacity 0.3s;
 }
-.work-progress { display: none; }
+.work-arrow svg { width: 1.1rem; height: 1.1rem; }
+.work-arrow:hover:not(:disabled) { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.work-arrow:disabled { opacity: 0.3; cursor: default; }
+
+/* Карусель: звичайний горизонтальний скрол браузера —
+   свайп на телефоні/тачпаді, Shift + колесо, стрілки, перетягування мишею */
+.work-viewport { margin-inline: calc(var(--gutter) * -1); margin-top: clamp(2rem, 5vh, 3.5rem); }
+.work-track {
+  display: flex;
+  gap: clamp(0.9rem, 1.6vw, 1.75rem);
+  padding-inline: var(--gutter);
+  padding-block: 0.25rem 0.5rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;    /* свайп до кінця не перемикає сторінку «назад» */
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  scrollbar-width: none;             /* свою смужку прогресу малюємо нижче */
+  -webkit-overflow-scrolling: touch;
+}
+.work-track::-webkit-scrollbar { display: none; }
+.work-track:focus-visible { outline-offset: -2px; }
+.work-track.is-dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; }
+.work-track.is-dragging * { pointer-events: none; }
+@media (hover: hover) and (pointer: fine) { .work-track { cursor: grab; } }
+.has-cursor .work-track { cursor: none; }
+
+.work-progress {
+  height: 2px;
+  margin-top: clamp(1.25rem, 3vh, 2rem);
+  background: var(--line);
+  overflow: hidden;
+}
+.work-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 0.15s linear;
+}
 
 .project-card {
   display: flex;
@@ -610,13 +653,12 @@ html.lenis, html.lenis body { height: auto; }
   transition: transform 0.9s var(--ease-out);
 }
 .project-card:hover .project-media-inner { transform: scale(1.06); }
-/* Картинка трохи ширша за рамку — для паралаксу під час горизонтального скролу */
 .project-media-inner > img,
 .project-media-inner > svg {
   position: absolute;
   top: 0;
-  left: -6%;
-  width: 112%;
+  left: 0;
+  width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
@@ -693,75 +735,31 @@ html.lenis, html.lenis body { height: auto; }
 html[lang="en"] [data-l="uk"],
 html:not([lang="en"]) [data-l="en"] { display: none; }
 
-/* ---- Десктоп: горизонтальна стрічка, яка їде при скролі вниз (вмикає JS) ---- */
-.work.is-horizontal {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  height: 100svh;
-  padding-top: calc(var(--header-h) + clamp(1rem, 4vh, 3rem));
-  padding-bottom: clamp(1.5rem, 4vh, 3rem);
-}
-.work.is-horizontal .work-hint { display: inline-flex; }
-.work.is-horizontal .work-viewport {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: center;
-  margin-inline: calc(var(--gutter) * -1);
-}
-.work.is-horizontal .work-track {
-  display: flex;
-  gap: clamp(1rem, 1.8vw, 2rem);
-  margin-top: 0;
-  padding-inline: var(--gutter);
-  height: 100%;
-  max-height: 40rem;
-  will-change: transform;
-}
-.work.is-horizontal .project-card {
+/* ---- Картки в каруселі: однакова висота текстової частини, тож і картки однакові ---- */
+.work-track .project-card {
   flex: 0 0 auto;
-  width: clamp(22rem, 31vw, 34rem);
+  width: clamp(18rem, 31vw, 32rem);
+  scroll-snap-align: start;
 }
-/* Текстова частина однакової висоти в усіх картках (2 рядки заголовка, 3 опису, 1 ряд тегів),
-   а картинка займає решту — тож картинки теж однакові */
-.work.is-horizontal .project-media { aspect-ratio: auto; flex: 1 1 auto; min-height: 0; }
-.work.is-horizontal .project-body { flex: 0 0 auto; }
-.work.is-horizontal .project-title { min-height: 2.24em; }
-.work.is-horizontal .project-desc {
+.work-track .project-title { min-height: 2.24em; }
+.work-track .project-desc {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 4.5em;
 }
-.work.is-horizontal .project-tags {
+.work-track .project-tags {
   flex-wrap: nowrap;
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
           mask-image: linear-gradient(to right, #000 85%, transparent);
 }
-.work.is-horizontal .project-tags li { flex: 0 0 auto; }
-/* Невисокі екрани ноутбуків: компактніше, щоб картинка лишалась помітною */
-@media (max-height: 820px) {
-  .work.is-horizontal .section-title { font-size: clamp(2.4rem, 6vw, 5rem); }
-  .work.is-horizontal .project-body { gap: 0.5rem; padding: 1rem 1.2rem 1.1rem; }
-  .work.is-horizontal .project-desc { -webkit-line-clamp: 2; min-height: 3em; font-size: 0.88rem; }
-  .work.is-horizontal .project-title { font-size: 1.2rem; }
-}
-.work.is-horizontal .work-progress {
-  display: block;
-  height: 2px;
-  margin-top: clamp(1rem, 3vh, 2rem);
-  background: var(--line);
-  overflow: hidden;
-}
-.work.is-horizontal .work-progress span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: 0 50%;
+.work-track .project-tags li { flex: 0 0 auto; }
+
+@media (max-width: 900px) {
+  .work-track .project-card { width: min(84vw, 26rem); }  /* видно краєчок наступної — зрозуміло, що можна гортати */
+  .work-arrows { display: none; }
 }
 
 /* ---------- Мобільні / сенсорні ---------- */

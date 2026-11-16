@@ -113,7 +113,10 @@ const I18N = {
     'services.3.text': 'Повноцінні застосунки всередині Telegram: каталог, кошик і замовлення без встановлення окремої програми.',
     'services.3.tags': 'Меню · Кошик · Замовлення',
     'work.title': 'Роботи',
-    'work.hint': 'Гортай — проєкти їдуть убік',
+    'work.hint': 'Гортай убік →',
+    'work.prev': 'Попередній проєкт',
+    'work.next': 'Наступний проєкт',
+    'work.list': 'Проєкти',
     'work.demo': 'Демо',
     'work.code': 'Код',
     'process.title': 'Як я працюю',
@@ -147,7 +150,10 @@ const I18N = {
     'services.3.text': 'Full apps inside Telegram: catalogue, cart and orders without installing anything.',
     'services.3.tags': 'Menu · Cart · Orders',
     'work.title': 'Work',
-    'work.hint': 'Keep scrolling — projects slide sideways',
+    'work.hint': 'Swipe sideways →',
+    'work.prev': 'Previous project',
+    'work.next': 'Next project',
+    'work.list': 'Projects',
     'work.demo': 'Demo',
     'work.code': 'Code',
     'process.title': 'How I work',
@@ -231,6 +237,10 @@ function applyLang(lang) {
     if (value == null) return;
     if (el.hasAttribute('data-split')) splitText(el, value);
     else el.textContent = value;
+  });
+  $$('[data-i18n-label]').forEach((el) => {
+    const value = dict[el.dataset.i18nLabel];
+    if (value != null) el.setAttribute('aria-label', value);
   });
 
   $$('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === currentLang)));
@@ -686,44 +696,91 @@ function renderProjects() {
   });
 }
 
-// Десктоп: секція закріплюється, а картки їдуть уліво, поки гортаєш униз.
-// Телефон / планшет / «без анімацій»: звичайний вертикальний список (CSS за замовчуванням).
+// Карусель проєктів: звичайний горизонтальний скрол браузера.
+//   телефон / тачпад — свайп убік; миша — перетягування, стрілки ← →, Shift + колесо;
+//   клавіатура — фокус на стрічці й стрілки на клавіатурі.
+// Звичайне колесо миші над каруселлю гортає сторінку вниз, як скрізь.
 function initWork() {
-  const section = $('.work');
   const track = $('.work-track');
-  if (!section || !track || REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
-  const { gsap } = window;
+  if (!track) return;
+  const bar = $('.work-progress span');
+  const arrows = $$('.work-arrow');
+  const behavior = REDUCED ? 'auto' : 'smooth';
 
-  gsap.matchMedia().add('(min-width: 900px) and (hover: hover) and (pointer: fine)', () => {
-    section.classList.add('is-horizontal');
-    const viewport = $('.work-viewport', section);
-    const bar = $('.work-progress span', section);
-    const distance = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
-
-    const tween = gsap.to(track, {
-      x: () => -distance(),
-      ease: 'none',
-      scrollTrigger: {
-        trigger: section,
-        start: 'top top',
-        end: () => `+=${distance()}`,
-        pin: true,
-        scrub: 0.6,
-        invalidateOnRefresh: true,
-        onUpdate: (self) => gsap.set(bar, { scaleX: self.progress }),
-      },
+  // Смужка-«повзунок»: ширина = видима частина, позиція = де ми зараз
+  const update = () => {
+    const max = track.scrollWidth - track.clientWidth;
+    const ratio = track.scrollWidth ? track.clientWidth / track.scrollWidth : 1;
+    const p = max > 0 ? track.scrollLeft / max : 0;
+    if (bar) {
+      bar.style.width = `${ratio * 100}%`;
+      bar.style.transform = `translateX(${ratio < 1 ? (p * (1 - ratio) / ratio) * 100 : 0}%)`;
+    }
+    arrows.forEach((b) => {
+      b.disabled = Number(b.dataset.dir) < 0 ? track.scrollLeft <= 2 : track.scrollLeft >= max - 2;
     });
+  };
+  track.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
 
-    // Паралакс картинок усередині карток під час руху стрічки
-    $$('.project-media-inner > *', track).forEach((media) => {
-      gsap.fromTo(media, { xPercent: -4 }, {
-        xPercent: 4, ease: 'none',
-        scrollTrigger: { trigger: media.closest('.project-card'), containerAnimation: tween, start: 'left right', end: 'right left', scrub: true },
-      });
-    });
+  // Крок = ширина картки + проміжок
+  const step = () => {
+    const cards = track.children;
+    if (cards.length < 2) return track.clientWidth;
+    return cards[1].getBoundingClientRect().left - cards[0].getBoundingClientRect().left;
+  };
+  arrows.forEach((b) => b.addEventListener('click', () => {
+    track.scrollBy({ left: Number(b.dataset.dir) * step(), behavior });
+  }));
 
-    return () => section.classList.remove('is-horizontal');
+  // Горизонтальний жест (тачпад убік або Shift + колесо) не віддаємо Lenis —
+  // хай браузер сам гортає карусель. Вертикальне колесо йде далі й гортає сторінку.
+  track.addEventListener('wheel', (e) => {
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.stopPropagation();
+  }, { passive: true });
+
+  // Перетягування мишею
+  let startX = 0;
+  let startLeft = 0;
+  let pressed = false;
+  let moved = false;
+  let suppressClick = false;
+
+  track.addEventListener('dragstart', (e) => e.preventDefault()); // не тягнути картинки/посилання браузером
+  track.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    pressed = true;
+    moved = false;
+    startX = e.clientX;
+    startLeft = track.scrollLeft;
   });
+  window.addEventListener('pointermove', (e) => {
+    if (!pressed) return;
+    const dx = e.clientX - startX;
+    if (!moved && Math.abs(dx) > 6) { moved = true; track.classList.add('is-dragging'); }
+    if (moved) track.scrollLeft = startLeft - dx;
+  });
+  window.addEventListener('pointerup', () => {
+    if (!pressed) return;
+    pressed = false;
+    if (!moved) return;
+    suppressClick = true;              // відпускання після перетягування — не клік по посиланню
+    setTimeout(() => { suppressClick = false; }, 0);
+    track.classList.remove('is-dragging');
+    // доводимо до найближчої картки
+    const pad = parseFloat(getComputedStyle(track).scrollPaddingLeft) || 0;
+    const left = track.getBoundingClientRect().left + pad;
+    let best = Infinity;
+    [...track.children].forEach((card) => {
+      const d = card.getBoundingClientRect().left - left;
+      if (Math.abs(d) < Math.abs(best)) best = d;
+    });
+    if (Number.isFinite(best)) track.scrollBy({ left: best, behavior });
+  });
+  track.addEventListener('click', (e) => {
+    if (suppressClick) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
 }
 
 // Перерахунок позицій усіх тригерів у порядку їх розташування на сторінці
