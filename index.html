@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=21">
 
   <!-- Three.js як ES-модуль (фіксована версія) -->
   <script type="importmap">
@@ -39,7 +39,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=19"></script>
+  <script type="module" src="main.js?v=21"></script>
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">Перейти до змісту</a>
@@ -117,10 +117,9 @@
       </div>
     </section>
 
-    <!-- ============ Бігучий рядок (прискорюється від скролу) ============ -->
-    <section class="marquee" aria-hidden="true">
-      <div class="marquee-row" data-skew><div class="marquee-track"></div></div>
-      <div class="marquee-row marquee-row--outline" data-skew><div class="marquee-track"></div></div>
+    <!-- ============ Фраза, слова якої «загоряються» при скролі ============ -->
+    <section class="statement">
+      <p class="statement-text" data-split data-i18n="statement.text">Кожен *сайт* і кожен *бот*, який я роблю, має одну мету — *приводити вам клієнтів*.</p>
     </section>
 
     <!-- ============ Заглушки — наповнимо на наступних етапах ============ -->

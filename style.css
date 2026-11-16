@@ -412,51 +412,33 @@ html.lenis, html.lenis body { height: auto; }
 }
 .reduced .scroll-progress, .no-js .scroll-progress { display: none; }
 
-/* ---------- Бігучий рядок ---------- */
-.marquee {
+/* ---------- Фраза, що «загоряється» при скролі ---------- */
+.statement {
   position: relative;
-  padding: clamp(3rem, 9vh, 6.5rem) 0;
-  overflow: hidden;
+  padding: clamp(4rem, 14vh, 9rem) var(--gutter);
   border-top: 1px solid var(--line);
 }
-/* Коли перший екран «прилипає», рядок наїжджає на частинки, що розлітаються —
+/* Коли перший екран «прилипає», фраза наїжджає на частинки, що розлітаються —
    без порожнього екрана між ними. Без анімацій (reduced) — звичайний відступ. */
-.js:not(.reduced) .marquee {
-  margin-top: -55vh;
-  margin-top: -55svh;
+.js:not(.reduced) .statement {
+  margin-top: -45vh;
+  margin-top: -45svh;
   z-index: 2;
   border-top: 0;
 }
 .hero { z-index: 1; }
-.marquee-row { overflow: hidden; white-space: nowrap; }
-.marquee-row + .marquee-row { margin-top: 0.1em; }
-.marquee-track {
-  display: flex;
-  width: max-content;
-  will-change: transform;
-}
-.marquee-chunk {
-  display: flex;
-  align-items: center;
-  gap: 0.35em;
-  padding-right: 0.35em;
+.statement-text {
+  max-width: 19ch;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(2.8rem, 9.5vw, 10rem);
+  font-size: clamp(2rem, 5.4vw, 6.2rem);
   line-height: 1.08;
-  letter-spacing: -0.045em;
-  text-transform: uppercase;
+  letter-spacing: -0.04em;
 }
-/* Другий рядок — суцільний приглушений текст.
-   Контур (text-stroke) не підходить: у шрифту Unbounded видно внутрішні лінії літер. */
-.marquee-row--outline .marquee-chunk {
-  color: rgba(241, 240, 234, 0.28);
-}
-.marquee-sep {
-  color: var(--accent);
-  font-size: 0.45em;
-  -webkit-text-stroke: 0;
-}
+.statement-text .is-accent { color: var(--accent); }
+.is-accent .char.is-plain { color: var(--fg); } /* кома/крапка після виділеного слова */
+/* Стартовий стан: слова ледь помітні, при скролі стають яскравими (JS) */
+.js:not(.reduced) .statement-text .word { opacity: 0.14; }
 
 /* Заголовки розділів: кожне слово обрізає свої літери під час появи */
 .section-title .word {

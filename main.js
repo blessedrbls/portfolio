@@ -31,7 +31,7 @@ const I18N = {
     'process.title': 'Як я працюю',
     'contact.title': 'Контакти',
     'footer.top': 'Нагору ↑',
-    'marquee.items': ['Сайти', 'Лендінги', 'Telegram-боти', 'Mini Apps', 'Інтернет-магазини'],
+    'statement.text': 'Кожен *сайт* і кожен *бот*, який я роблю, має одну мету — *приводити вам клієнтів*.',
   },
   en: {
     'meta.title': 'Oleksii — websites & Telegram bots for business',
@@ -53,7 +53,7 @@ const I18N = {
     'process.title': 'How I work',
     'contact.title': 'Contact',
     'footer.top': 'Back to top ↑',
-    'marquee.items': ['Websites', 'Landing pages', 'Telegram bots', 'Mini Apps', 'Online stores'],
+    'statement.text': 'Every *website* and every *bot* I build has one job: *bring you clients*.',
   },
 };
 
@@ -85,25 +85,27 @@ function splitText(el, text) {
   const words = [];
   let accent = false;
   text.split(' ').forEach((raw) => {
-    let word = raw;
-    const opens = word.startsWith('*');
-    if (opens) { accent = true; word = word.slice(1); }
-    const closes = word.endsWith('*');
-    if (closes) word = word.slice(0, -1);
-    words.push({ word, accent });
+    // «*бот*,» → зірочки + слово + розділовий знак після закривальної зірочки
+    const m = raw.match(/^(\*?)(.*?)(\*?)([.,!?:;…]*)$/);
+    const opens = m[1] === '*';
+    const closes = m[3] === '*';
+    if (opens) accent = true;
+    words.push({ word: m[2], tail: m[4], accent });
     if (closes) accent = false;
   });
 
-  el.setAttribute('aria-label', words.map((w) => w.word).join(' '));
+  el.setAttribute('aria-label', words.map((w) => w.word + w.tail).join(' '));
   el.textContent = '';
-  words.forEach(({ word, accent: isAccent }, i) => {
+  words.forEach(({ word, tail, accent: isAccent }, i) => {
     const w = document.createElement('span');
     w.className = isAccent ? 'word is-accent' : 'word';
     w.setAttribute('aria-hidden', 'true');
-    for (const ch of word) {
+    // розділові знаки після виділеного слова — звичайним кольором
+    const chars = [...word].map((ch) => [ch, false]).concat([...tail].map((ch) => [ch, isAccent]));
+    for (const [ch, plain] of chars) {
       // .char — для анімації виходу при скролі, .char-in — для появи (щоб вони не конфліктували)
       const c = document.createElement('span');
-      c.className = 'char';
+      c.className = plain ? 'char is-plain' : 'char';
       const inner = document.createElement('span');
       inner.className = 'char-in';
       inner.textContent = ch;
@@ -131,7 +133,6 @@ function applyLang(lang) {
     else el.textContent = value;
   });
 
-  buildMarquee(dict['marquee.items']);
   $$('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === currentLang)));
   try { localStorage.setItem('lang', currentLang); } catch (e) { /* приватний режим */ }
 }
@@ -344,7 +345,17 @@ function initScrollFx() {
       .to('.hero-glow', { opacity: 0, duration: 0.6 }, 0.3)
       .to({}, { duration: 0.4 }); // «запас» — поки сфера розлітається вибухом
 
-    // 2) Заголовки розділів з'являються по літерах
+    // 2) Фраза: слова по черзі «загоряються» від ледь помітних до яскравих —
+    //    уся фраза видна одразу, а швидкість ефекту задає сам користувач колесом
+    const statementWords = $$('.statement-text .word');
+    if (statementWords.length) {
+      gsap.fromTo(statementWords, { opacity: 0.14 }, {
+        opacity: 1, ease: 'none', stagger: 0.1,
+        scrollTrigger: { trigger: '.statement-text', start: 'top 80%', end: 'bottom 45%', scrub: 0.5 },
+      });
+    }
+
+    // 3) Заголовки розділів з'являються по літерах
     $$('.section-title').forEach((title) => {
       const chars = $$('.char-in', title);
       if (!chars.length) return;
@@ -389,64 +400,6 @@ function initScrollMotion() {
       if (Math.abs(skew - lastSkew) > 0.01) { setSkew(skew); lastSkew = skew; }
     }
   });
-}
-
-/* =========================================================
-   Бігучий рядок: прискорюється від швидкості скролу
-   і змінює напрям разом із ним
-   ========================================================= */
-const marqueeRows = [];
-
-function buildMarquee(items) {
-  if (!Array.isArray(items)) return;
-  $$('.marquee-track').forEach((track) => {
-    const chunk = () => {
-      const c = document.createElement('div');
-      c.className = 'marquee-chunk';
-      items.forEach((item) => {
-        const t = document.createElement('span');
-        t.textContent = item;
-        const sep = document.createElement('span');
-        sep.className = 'marquee-sep';
-        sep.textContent = '✦';
-        c.append(t, sep);
-      });
-      return c;
-    };
-    track.replaceChildren(chunk(), chunk()); // дві копії → безшовне повторення
-  });
-  marqueeRows.forEach((r) => { r.x = 0; r.width = 0; });
-}
-
-function initMarquee() {
-  const rows = $$('.marquee-row');
-  if (!rows.length || REDUCED || !HAS_GSAP) return;
-  const { gsap } = window;
-  rows.forEach((row, i) => {
-    marqueeRows.push({ track: $('.marquee-track', row), x: 0, width: 0, dir: i % 2 ? 1 : -1 });
-  });
-
-  let visible = false;
-  new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe($('.marquee'));
-
-  let direction = 1;
-  gsap.ticker.add((time, deltaMs) => {
-    if (!visible) return;
-    const dt = Math.min(deltaMs, 50) / 1000;
-    const v = scrollSpeed.smooth;
-    if (Math.abs(v) > 30) direction = v > 0 ? 1 : -1;
-    // px/с: спокійна база + помірне прискорення від скролу (обмежене, щоб текст лишався читабельним)
-    const speed = 60 + Math.min(Math.abs(v) * 0.15, 360);
-    marqueeRows.forEach((r) => {
-      if (!r.width) r.width = r.track.scrollWidth / 2;
-      if (!r.width) return;
-      r.x += r.dir * direction * speed * dt;
-      if (r.x <= -r.width) r.x += r.width;
-      if (r.x > 0) r.x -= r.width;
-      r.track.style.transform = `translate3d(${r.x}px, 0, 0)`;
-    });
-  });
-  window.addEventListener('resize', () => marqueeRows.forEach((r) => { r.width = 0; }));
 }
 
 /* =========================================================
@@ -1021,7 +974,6 @@ function init() {
 
   initScroll();
   initScrollMotion();
-  initMarquee();
   initHeader();
   initAnchors();
   initCursor();
