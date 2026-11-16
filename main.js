@@ -242,8 +242,13 @@ function splitText(el, text) {
     if (closes) accent = false;
   });
 
-  el.setAttribute('aria-label', words.map((w) => w.word + w.tail).join(' '));
+  // текст для скрінрідерів — прихованим span (aria-label на <p>/<h*> заборонений)
+  el.removeAttribute('aria-label');
   el.textContent = '';
+  const sr = document.createElement('span');
+  sr.className = 'sr-only';
+  sr.textContent = words.map((w) => w.word + w.tail).join(' ');
+  el.appendChild(sr);
   words.forEach(({ word, tail, accent: isAccent }, i) => {
     const w = document.createElement('span');
     w.className = isAccent ? 'word is-accent' : 'word';
@@ -767,7 +772,7 @@ function renderProjects() {
       <div class="project-media">
         <div class="project-media-inner">
           ${p.image
-            ? `<img src="${esc(p.image)}" alt="" loading="lazy" decoding="async" data-ph="${i}">`
+            ? `<img src="${esc(p.image)}" srcset="${esc(p.image.replace('.webp', '-1000.webp'))} 1000w, ${esc(p.image)} 1600w" sizes="(max-width: 900px) min(84vw, 26rem), clamp(18rem, 31vw, 32rem)" width="1600" height="1000" alt="" loading="lazy" decoding="async" data-ph="${i}">`
             : placeholderSVG(p, i)}
         </div>
       </div>

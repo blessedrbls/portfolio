@@ -4,24 +4,37 @@ Personal portfolio of Oleksii, a web developer building websites, landing pages,
 
 **Live:** https://blessedrbls.github.io/portfolio/
 
-![Portfolio hero section](images/readme-hero.jpg)
+![Hero section with the particle sphere](images/readme-hero.jpg)
 
 ## Features
 
-- **3D hero** — an interactive particle sphere (Three.js + custom GLSL shaders) that reacts to the cursor and explodes into particles as you scroll
-- **Scroll storytelling** — pinned hero with a letter-by-letter exit, a statement whose words light up on scroll, a process timeline whose line draws itself (SVG `stroke-dashoffset` + GSAP ScrollTrigger)
-- **Services** — cards with a mouse-follow 3D tilt and a cursor-tracking neon border
-- **Work** — native swipe/drag carousel (touch, trackpad, mouse drag, arrows, keyboard); project data lives in one `PROJECTS` array in `main.js`
-- **Contact** — a big animated call to action and magnetic buttons
-- Preloader, custom cursor, smooth scrolling (Lenis), film-grain overlay
-- **Two languages** — Ukrainian (default) and English, with a smooth switch
-- **Accessible** — respects `prefers-reduced-motion` (everything is visible without animations), keyboard-friendly, skip link
-- **Fast on any device** — adaptive 3D quality: phones and software-rendered GPUs get a lighter animated mode
-- Open Graph image, favicons and meta tags
+- **Sphere guide.** One particle sphere (Three.js + custom GLSL shaders) stays behind the whole page and changes its mood (size, position, motion and glow) smoothly from section to section. It reacts to the cursor and bursts into particles as you leave the hero.
+- **Starfield journey.** A WebGL starfield moves with the page, and the stars streak into light trails the faster you scroll, while the sphere lags behind and catches up.
+- **Live demos.** Project cards open the real site or Mini App inside a phone or browser frame, so visitors can try it without leaving the page. Esc closes it and focus returns to the card.
+- **Reactive work section.** A native swipe/drag carousel (touch, trackpad, mouse drag, arrows, keyboard). Hovering a project tints the sphere with that project's colour.
+- **Scroll storytelling.** Pinned hero with a letter-by-letter exit, a statement whose words light up as you scroll, and a process timeline whose line draws itself.
+- **Services.** Cards with a 3D tilt and a neon border that follows the cursor.
+- **Easter egg.** Type `hello` (or click the logo five times).
+- Preloader, custom cursor, magnetic buttons, smooth scrolling (Lenis), film grain.
+- **Two languages.** Ukrainian (default) and English, with a smooth switch.
+
+![Work section with project cards](images/readme-work.jpg)
+
+![Process timeline](images/readme-process.jpg)
+
+## Performance and accessibility
+
+- **Adaptive quality.** The 3D scene measures frame time and lowers resolution and particle count when needed. Software-rendered GPUs (e.g. Microsoft Basic Render Driver) get a light mode that stops drawing when the page is idle. On normal GPUs the idle scene drops to 30 fps, and it pauses while a demo is open.
+- **FPS meter.** Add `?fps` to the URL to see frame rate, quality level and the detected GPU.
+- **Lighthouse (desktop):** Accessibility 100, Best Practices 100, SEO 100.
+- Respects `prefers-reduced-motion`: everything is visible and readable without animations, and the page still works if the animation libraries fail to load.
+- Keyboard-friendly, with a skip link, screen-reader text for animated headings and WCAG-contrast text.
+- Responsive images (`srcset`), lazy loading, non-blocking web fonts.
+- Open Graph image, favicons and meta tags.
 
 ## Tech
 
-Plain static site — `index.html`, `style.css`, `main.js`. No build step.
+Plain static site: `index.html`, `style.css`, `main.js`. No build step.
 Libraries are loaded from CDNs with pinned versions: Three.js 0.160.0, GSAP 3.12.5 + ScrollTrigger, Lenis 1.1.13.
 
 ## Run locally
@@ -36,4 +49,4 @@ Then open http://localhost:8000.
 
 ## Editing projects
 
-Projects are defined in the `PROJECTS` array at the top of `main.js` (title and description in Ukrainian and English, tags, image, demo and code links). Cover images live in `images/` (1600×1000 `.webp`).
+Projects are defined in the `PROJECTS` array at the top of `main.js`: title and description in Ukrainian and English, tags, image, tint colour, demo and code links, and an optional `preview` (`phone` or `desktop`) for the live demo frame. Cover images live in `images/` as 1600×1000 `.webp`, with a 1000 px wide `-1000.webp` copy for phones.

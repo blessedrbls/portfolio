@@ -865,8 +865,9 @@ html:not([lang="en"]) [data-l="en"] { display: none; }
 }
 /* Ще «не досягнуті» кроки — приглушені. Тільки з класом .fx (анімації реально працюють):
    без GSAP / з «без анімацій» кроки повністю видимі */
-.fx .process-step:not(.is-active) .process-step-title { color: rgba(241, 240, 234, 0.22); }
-.fx .process-step:not(.is-active) .process-step-text { opacity: 0.35; }
+/* приглушення в межах контрасту WCAG 4.5:1 на чорному */
+.fx .process-step:not(.is-active) .process-step-title { color: rgba(241, 240, 234, 0.5); }
+.fx .process-step:not(.is-active) .process-step-text { opacity: 0.85; }
 /* Активний крок «загоряється»; без анімацій — усі кроки одразу активні */
 .process-step.is-active .process-dot,
 html:not(.fx) .process-dot {
