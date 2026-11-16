@@ -489,6 +489,8 @@ function initScrollFx() {
     }, 0)
       // дочірні елементи, а не самі .hero-reveal — їх уже анімує поява, і анімації конфліктували б
       .to(['.hero-top > *', '.hero-bottom', '.hero-meta > *'], { autoAlpha: 0, y: -50, duration: 0.25, stagger: 0.03 }, 0.02)
+      // і тонка лінія над «Відкритий до нових проєктів» — інакше вона видніється крізь фразу
+      .to('.hero-meta', { borderTopColor: 'rgba(241, 240, 234, 0)', duration: 0.25 }, 0.02)
       .to('.hero-glow', { opacity: 0, duration: 0.6 }, 0.3)
       .to({}, { duration: 0.4 }); // «запас» — поки сфера розлітається вибухом
 

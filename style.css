@@ -307,10 +307,10 @@ html.lenis, html.lenis body { height: auto; }
 .hero-hello b { font-weight: 500; }
 
 .hero-title {
-  max-width: 12.5ch;
+  max-width: 14ch;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(2.5rem, 6.6vw, 8rem);
+  font-size: clamp(2.2rem, 4.6vw, 5.4rem);
   line-height: 1;
   letter-spacing: -0.045em;
   margin-left: -0.03em;
@@ -404,7 +404,7 @@ html.lenis, html.lenis body { height: auto; }
 @media (max-width: 760px) {
   .hero-top .hero-year { display: none; }
   .hero-bottom { flex-direction: column; align-items: flex-start; }
-  .hero-title { font-size: clamp(1.9rem, 9.2vw, 3.4rem); }
+  .hero-title { font-size: clamp(1.75rem, 7.6vw, 2.6rem); }
   .scroll-hint { display: none; }
 }
 
@@ -442,10 +442,10 @@ html.lenis, html.lenis body { height: auto; }
 }
 .hero { z-index: 1; }
 .statement-text {
-  max-width: 19ch;
+  max-width: 24ch;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(2rem, 5.4vw, 6.2rem);
+  font-size: clamp(1.5rem, 3vw, 3.2rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
 }
@@ -474,7 +474,7 @@ html.lenis, html.lenis body { height: auto; }
 .section-title {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(2.5rem, 9vw, 9rem);
+  font-size: clamp(2rem, 5vw, 5rem);
   line-height: 0.9;
   letter-spacing: -0.05em;
   text-transform: uppercase;
@@ -555,7 +555,7 @@ html.lenis, html.lenis body { height: auto; }
 .service-title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(1.4rem, 2vw, 1.9rem);
+  font-size: clamp(1.3rem, 1.7vw, 1.7rem);
   line-height: 1.1;
   letter-spacing: -0.03em;
 }
@@ -833,7 +833,7 @@ html:not([lang="en"]) [data-l="en"] { display: none; }
 .process-step-title {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(1.5rem, 3.2vw, 2.8rem);
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
   line-height: 1.05;
   letter-spacing: -0.035em;
   padding-top: 0.35rem;
@@ -873,10 +873,10 @@ html:not(.fx) .process-line-fill { stroke-dashoffset: 0; }
 .contact { padding-bottom: clamp(5rem, 14vh, 9rem); }
 .contact-title {
   margin-top: 1.5rem;
-  max-width: 12ch;
+  max-width: 14ch;
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: clamp(3rem, 10.5vw, 12rem);
+  font-size: clamp(2.4rem, 6.4vw, 6.5rem);
   line-height: 0.95;
   letter-spacing: -0.055em;
   text-transform: uppercase;
