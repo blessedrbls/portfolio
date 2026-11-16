@@ -428,6 +428,8 @@ html.lenis, html.lenis body { height: auto; }
 @media (hover: none), (pointer: coarse) {
   .grain { animation: none; }
 }
+/* Програмна відеокарта (немає драйвера) — без постійних анімацій на весь екран */
+.low-gpu .grain { animation: none; }
 
 /* ---------- Без анімацій (prefers-reduced-motion) ---------- */
 @media (prefers-reduced-motion: reduce) {

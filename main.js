@@ -456,6 +456,18 @@ async function initHero3D() {
   renderer.setPixelRatio(QUALITY[level].pr);
   renderer.setClearColor(0x000000, 0);
 
+  // Назва відеокарти. Якщо вона програмна (немає драйвера / вимкнене апаратне прискорення),
+  // вся графіка рахується процесором — тоді сферу малюємо одним статичним кадром.
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    window.__gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  } catch (e) { window.__gpu = 'unknown'; }
+  const SOFTWARE_GPU = /swiftshader|basic render|llvmpipe|softpipe|software/i.test(window.__gpu || '')
+    || new URLSearchParams(location.search).has('softgpu'); // ?softgpu — перевірити цей режим
+  if (SOFTWARE_GPU) html.classList.add('low-gpu');
+  const STATIC = REDUCED || SOFTWARE_GPU;
+
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
   camera.position.z = 6;
@@ -493,7 +505,7 @@ async function initHero3D() {
     uSize: { value: IS_MOBILE ? 22 : 21 },
     uPixelRatio: { value: QUALITY[level].pr },
     uScroll: { value: 0 },
-    uIntro: { value: REDUCED ? 1 : 0 },
+    uIntro: { value: STATIC ? 1 : 0 },
     uColorA: { value: new THREE.Color(accent) },
     uColorB: { value: new THREE.Color('#a4a4b2') },
   };
@@ -548,7 +560,7 @@ async function initHero3D() {
       root.position.set(0, halfH * 0.22, 0);
       root.scale.setScalar(Math.min(halfW * 0.92, 1.1));
     }
-    if (REDUCED) renderer.render(scene, camera);
+    if (STATIC) renderer.render(scene, camera);
   };
   new ResizeObserver(resize).observe(hero);
 
@@ -562,8 +574,9 @@ async function initHero3D() {
   };
   applyQuality();
 
-  // ---- Без анімацій: один статичний кадр і все ----
-  if (REDUCED) {
+  // ---- Без анімацій або програмна відеокарта: один статичний кадр і все ----
+  if (STATIC) {
+    window.__heroQuality = SOFTWARE_GPU ? 'static (software GPU)' : 'static';
     tilt.rotation.set(0.25, -0.4, 0);
     renderer.render(scene, camera);
     return;
@@ -674,13 +687,6 @@ async function initHero3D() {
 
     renderer.render(scene, camera);
   };
-
-  // Назва відеокарти — для лічильника FPS (видно, чи увімкнене апаратне прискорення)
-  try {
-    const gl = renderer.getContext();
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    window.__gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-  } catch (e) { window.__gpu = 'unknown'; }
 
   // Для лічильника FPS: можна вимкнути 3D, щоб побачити, скільки воно «з'їдає»
   let disabled = false;
