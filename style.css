@@ -428,8 +428,11 @@ html.lenis, html.lenis body { height: auto; }
 @media (hover: none), (pointer: coarse) {
   .grain { animation: none; }
 }
-/* Програмна відеокарта (немає драйвера) — без постійних анімацій на весь екран */
-.low-gpu .grain { animation: none; }
+/* Легкий режим (слабка / програмна відеокарта): зерно — нерухомий фон сторінки,
+   а не окремий шар поверх усього, який браузер мусить змішувати кожен кадр */
+.lite .grain { display: none; }
+.lite body { background-image: var(--grain-bg, none); }
+.lite .hero { background: transparent; }
 
 /* ---------- Без анімацій (prefers-reduced-motion) ---------- */
 @media (prefers-reduced-motion: reduce) {

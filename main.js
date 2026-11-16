@@ -442,31 +442,36 @@ async function initHero3D() {
   }
 
   // ---- Рівні якості. Якщо кадрів мало — сцена сама спускається на рівень нижче ----
+  // crop: малюємо лише прямокутник навколо сфери, а не весь екран (полотно в 2 рази менше)
+  // lite: зерно стає нерухомим фоном замість окремого шару поверх сторінки
+  // frameMs: мінімальний інтервал між кадрами сфери (33 = ~30 FPS для найслабших пристроїв)
   const dpr = window.devicePixelRatio || 1;
   const QUALITY = [
-    { pr: Math.min(dpr, 1.5), frac: 1 },
-    { pr: Math.min(dpr, 1),   frac: 1 },
-    { pr: Math.min(dpr, 1),   frac: 0.6 },
-    { pr: Math.min(dpr, 0.75), frac: 0.4 },
+    { pr: Math.min(dpr, 1.5), frac: 1,    crop: false, frameMs: 12 },
+    { pr: Math.min(dpr, 1),   frac: 1,    crop: false, frameMs: 12 },
+    { pr: Math.min(dpr, 1),   frac: 0.55, crop: true,  frameMs: 12, size: 1.25 },
+    { pr: Math.min(dpr, 1),   frac: 0.4,  crop: true,  frameMs: 33, size: 1.35 },
   ];
-  let level = IS_MOBILE ? 1 : 0;
   const COUNT = IS_MOBILE ? 5000 : 10000;
   const DUST = IS_MOBILE ? 150 : 400;
 
-  renderer.setPixelRatio(QUALITY[level].pr);
   renderer.setClearColor(0x000000, 0);
 
   // Назва відеокарти. Якщо вона програмна (немає драйвера / вимкнене апаратне прискорення),
-  // вся графіка рахується процесором — тоді сферу малюємо одним статичним кадром.
+  // усю графіку рахує процесор — тоді одразу стартуємо з легкого, але живого режиму.
   try {
     const gl = renderer.getContext();
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
     window.__gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
   } catch (e) { window.__gpu = 'unknown'; }
+  const params = new URLSearchParams(location.search);
   const SOFTWARE_GPU = /swiftshader|basic render|llvmpipe|softpipe|software/i.test(window.__gpu || '')
-    || new URLSearchParams(location.search).has('softgpu'); // ?softgpu — перевірити цей режим
-  if (SOFTWARE_GPU) html.classList.add('low-gpu');
-  const STATIC = REDUCED || SOFTWARE_GPU;
+    || params.has('softgpu'); // ?softgpu — перевірити цей режим на нормальній відеокарті
+  const STATIC = REDUCED;
+
+  let level = SOFTWARE_GPU ? 2 : (IS_MOBILE ? 1 : 0);
+  if (params.has('q')) level = Math.max(0, Math.min(QUALITY.length - 1, Number(params.get('q')) || 0)); // ?q=2 — для тестів
+  renderer.setPixelRatio(QUALITY[level].pr);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
@@ -502,7 +507,7 @@ async function initHero3D() {
     uMouse: { value: new THREE.Vector2(0, 0) },
     uAspect: { value: 1 },
     uHover: { value: 0 },
-    uSize: { value: IS_MOBILE ? 22 : 21 },
+    uSize: { value: 0 }, // задається в applyQuality
     uPixelRatio: { value: QUALITY[level].pr },
     uScroll: { value: 0 },
     uIntro: { value: STATIC ? 1 : 0 },
@@ -541,13 +546,12 @@ async function initHero3D() {
   scene.add(dust);
 
   // ---- Розмір і композиція ----
+  // view — прямокутник (у пікселях hero), який реально малює полотно
+  const view = { x: 0, y: 0, w: 1, h: 1, W: 1, H: 1 };
   const resize = () => {
-    const w = hero.clientWidth;
-    const h = hero.clientHeight;
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    uniforms.uAspect.value = w / h;
+    const W = hero.clientWidth;
+    const H = hero.clientHeight;
+    camera.aspect = W / H;
 
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
     const halfW = halfH * camera.aspect;
@@ -560,6 +564,28 @@ async function initHero3D() {
       root.position.set(0, halfH * 0.22, 0);
       root.scale.setScalar(Math.min(halfW * 0.92, 1.1));
     }
+
+    let x = 0, y = 0, w = W, h = H;
+    if (QUALITY[level].crop) {
+      // Квадрат навколо сфери із запасом на «дихання» і відштовхування мишею
+      const ppu = H / (2 * halfH);
+      const cx = W / 2 + root.position.x * ppu;
+      const cy = H / 2 - root.position.y * ppu;
+      const R = root.scale.x * 2.0 * ppu;
+      x = Math.max(0, Math.floor(cx - R));
+      y = Math.max(0, Math.floor(cy - R));
+      w = Math.min(W, Math.ceil(cx + R)) - x;
+      h = Math.min(H, Math.ceil(cy + R)) - y;
+      camera.setViewOffset(W, H, x, y, w, h);
+      Object.assign(canvas.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, right: 'auto', bottom: 'auto' });
+    } else {
+      camera.clearViewOffset();
+      Object.assign(canvas.style, { left: '', top: '', width: '', height: '', right: '', bottom: '' });
+    }
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+    Object.assign(view, { x, y, w, h, W, H });
+    uniforms.uAspect.value = w / h;
     if (STATIC) renderer.render(scene, camera);
   };
   new ResizeObserver(resize).observe(hero);
@@ -568,15 +594,46 @@ async function initHero3D() {
     const q = QUALITY[level];
     renderer.setPixelRatio(q.pr);
     uniforms.uPixelRatio.value = q.pr;
+    // менше частинок → трохи більші, щоб сфера не ставала блідою
+    uniforms.uSize.value = (IS_MOBILE ? 22 : 21) * (q.size || 1);
     geometry.setDrawRange(0, Math.floor(COUNT * q.frac));
+    dust.visible = !q.crop;                  // пил по всьому екрану в обрізаному полотні не вміщається
+    html.classList.toggle('lite', q.crop);   // зерно → нерухомий фон
     resize();
     window.__heroQuality = level;
   };
   applyQuality();
 
+  window.__heroDebug = { uniforms, view, mouse: () => mouse }; // для перевірки в консолі
+
+  // Для тестів продуктивності: середній час одного кадру (мс) з очікуванням відеокарти.
+  // opts: { pr, frac, w, h } — тимчасово змінити параметри для заміру.
+  window.__bench3d = (opts = {}, frames = 30) => {
+    const gl = renderer.getContext();
+    const px = new Uint8Array(4);
+    const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); // чекає кінця малювання
+    const prevLevel = level;
+    if (opts.level != null) { level = opts.level; applyQuality(); }
+    const q = QUALITY[level];
+    renderer.setPixelRatio(opts.pr ?? q.pr);
+    geometry.setDrawRange(0, Math.floor(COUNT * (opts.frac ?? q.frac)));
+    if (opts.w) renderer.setSize(opts.w, opts.h, false);
+    renderer.render(scene, camera); sync();
+    const t0 = performance.now();
+    for (let i = 0; i < frames; i++) {
+      uniforms.uTime.value += 0.016;
+      renderer.render(scene, camera);
+      sync();
+    }
+    const ms = (performance.now() - t0) / frames;
+    level = prevLevel;
+    applyQuality();
+    return Math.round(ms * 100) / 100;
+  };
+
   // ---- Без анімацій або програмна відеокарта: один статичний кадр і все ----
   if (STATIC) {
-    window.__heroQuality = SOFTWARE_GPU ? 'static (software GPU)' : 'static';
+    window.__heroQuality = 'static';
     tilt.rotation.set(0.25, -0.4, 0);
     renderer.render(scene, camera);
     return;
@@ -668,7 +725,7 @@ async function initHero3D() {
     requestAnimationFrame(frame);
     const now = performance.now();
     monitor(now);
-    if (now - lastRender < 12) return;
+    if (now - lastRender < QUALITY[level].frameMs) return;
     lastRender = now;
     const dt = Math.min(clock.getDelta(), 0.05);
     uniforms.uTime.value += dt;
@@ -676,7 +733,10 @@ async function initHero3D() {
     const k = 1 - Math.pow(1 - 0.12, dt * 60);
     mouse.x += (mouse.tx - mouse.x) * k;
     mouse.y += (mouse.ty - mouse.y) * k;
-    uniforms.uMouse.value.set(mouse.x, mouse.y);
+    // Миша в координатах полотна (воно може бути обрізаним прямокутником навколо сфери)
+    const px = ((mouse.x + 1) / 2) * view.W;
+    const py = ((1 - mouse.y) / 2) * view.H;
+    uniforms.uMouse.value.set(((px - view.x) / view.w) * 2 - 1, -(((py - view.y) / view.h) * 2 - 1));
     uniforms.uHover.value += (hoverTarget - uniforms.uHover.value) * 0.05;
 
     sphere.rotation.y += dt * 0.07;
@@ -727,6 +787,16 @@ function initGrain() {
     }
     ctx.putImageData(img, 0, 0);
     el.style.backgroundImage = `url(${c.toDataURL('image/png')})`;
+
+    // Друга текстура — напівпрозора, для легкого режиму (зерно як фон сторінки)
+    const img2 = ctx.createImageData(size, size);
+    for (let i = 0; i < img2.data.length; i += 4) {
+      const v = Math.random() > 0.5 ? 255 : 0;
+      img2.data[i] = img2.data[i + 1] = img2.data[i + 2] = v;
+      img2.data[i + 3] = 16 + Math.random() * 8; // ~7% непрозорості, як у шару-зерна
+    }
+    ctx.putImageData(img2, 0, 0);
+    html.style.setProperty('--grain-bg', `url(${c.toDataURL('image/png')})`);
   } catch (e) { /* лишається SVG із CSS */ }
 }
 
