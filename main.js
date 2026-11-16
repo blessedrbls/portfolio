@@ -225,16 +225,30 @@ function initCursor() {
 
   html.classList.add('has-cursor');
 
-  const pos = { x: innerWidth / 2, y: innerHeight / 2 };
-  const ringPos = { ...pos };
+  // Точка і кільце стоять рівно там, де миша — без інерції.
+  // pointerrawupdate (Chrome/Edge) приходить частіше й раніше за pointermove → менша затримка.
+  const moveEvent = 'onpointerrawupdate' in window ? 'pointerrawupdate' : 'pointermove';
+  let x = 0;
+  let y = 0;
+  let dirty = false;
 
-  window.addEventListener('pointermove', (e) => {
+  window.addEventListener(moveEvent, (e) => {
     if (e.pointerType !== 'mouse') return;
-    pos.x = e.clientX;
-    pos.y = e.clientY;
-    dot.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
-    cursor.classList.add('is-visible');
+    x = e.clientX;
+    y = e.clientY;
+    if (!dirty) {
+      dirty = true;
+      requestAnimationFrame(paint);
+    }
   }, { passive: true });
+
+  function paint() {
+    dirty = false;
+    const t = `translate3d(${x}px, ${y}px, 0)`;
+    dot.style.transform = t;
+    ring.style.transform = t;
+    cursor.classList.add('is-visible');
+  }
 
   document.addEventListener('pointerleave', () => cursor.classList.remove('is-visible'));
   document.addEventListener('pointerdown', () => cursor.classList.add('is-down'));
@@ -245,20 +259,6 @@ function initCursor() {
     const hit = e.target.closest('a, button, [data-cursor]');
     cursor.classList.toggle('is-hover', !!hit);
   });
-
-  // Кільце майже одразу йде за точкою — лише ледь помітна інерція.
-  // Швидкість не залежить від частоти кадрів (60 / 120 Гц однаково).
-  let last = performance.now();
-  const tick = (now) => {
-    const dt = Math.min((now - last) / 1000, 0.1);
-    last = now;
-    const k = 1 - Math.pow(1 - 0.45, dt * 60);
-    ringPos.x += (pos.x - ringPos.x) * k;
-    ringPos.y += (pos.y - ringPos.y) * k;
-    ring.style.transform = `translate3d(${ringPos.x}px, ${ringPos.y}px, 0)`;
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
 }
 
 /* =========================================================
@@ -575,9 +575,15 @@ async function initHero3D() {
   let running = false;
   let inView = true;
 
+  // На екранах 120/144 Гц сцену малюємо приблизно 60 разів на секунду —
+  // для повільної сфери різниці не видно, а відеокарта звільняється для курсора й скролу.
+  let lastRender = 0;
   const frame = () => {
     if (!running) return;
     requestAnimationFrame(frame);
+    const now = performance.now();
+    if (now - lastRender < 12) return;
+    lastRender = now;
     const dt = Math.min(clock.getDelta(), 0.05);
     uniforms.uTime.value += dt;
 
