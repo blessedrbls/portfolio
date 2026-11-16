@@ -954,7 +954,7 @@ function initGrain() {
     for (let i = 0; i < img2.data.length; i += 4) {
       const v = Math.random() > 0.5 ? 255 : 0;
       img2.data[i] = img2.data[i + 1] = img2.data[i + 2] = v;
-      img2.data[i + 3] = 10 + Math.random() * 6; // ~5% непрозорості, як у шару-зерна
+      img2.data[i + 3] = 7 + Math.random() * 5; // ~4% непрозорості, як у шару-зерна
     }
     ctx.putImageData(img2, 0, 0);
     html.style.setProperty('--grain-bg', `url(${c.toDataURL('image/png')})`);
