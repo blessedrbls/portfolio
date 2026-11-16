@@ -441,6 +441,22 @@ html.lenis, html.lenis body { height: auto; }
   border-top: 0;
 }
 .hero { z-index: 1; }
+
+/* «Сфера-провідник»: JS переносить 3D-полотно з першого екрана у фон усього сайту.
+   Блоки йдуть поверх нього, перший екран стає прозорим, щоб сферу було видно. */
+.hero-canvas.is-guide {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.fx .hero { background: transparent; }
+.fx .section,
+.fx .site-footer { position: relative; z-index: 2; }
+/* збільшений під час «прольоту» вміст не має вилазити за краї екрана */
+.fx .section, .fx .statement { overflow-x: clip; }
 .statement-text {
   max-width: 24ch;
   font-family: var(--font-display);

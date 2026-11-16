@@ -927,7 +927,13 @@ const VERTEX = /* glsl */`
   uniform float uScroll;     // 0..1 — прогрес скролу першого екрану
   uniform float uIntro;      // 0..1 — анімація появи
   uniform float uExplode;    // 0..1 — «вибух» сфери при скролі
-  uniform float uExplodeAmp; // сила вибуху (у легкому режимі менша)
+  // «Настрій» сфери — плавно змінюється від блоку до блоку
+  uniform float uAmp;        // наскільки сильно «дихає» поверхня
+  uniform float uFreq;       // дрібні (більше) чи великі (менше) хвилі
+  uniform float uSpread;     // 0 — чітка куля, більше — пухка хмара
+  uniform float uFlow;       // швидкість течії шуму
+  uniform float uGlow;       // додаткове фіолетове світіння
+  uniform float uDim;        // загальна яскравість (за текстом — тьмяніше)
   attribute float aRandom;
   varying float vGlow;
   varying float vAlpha;
@@ -935,19 +941,19 @@ const VERTEX = /* glsl */`
 
   void main() {
     vec3 n = normalize(position);
-    float t = uTime * 0.22;
+    float t = uTime * 0.22 * uFlow;
 
-    float big   = snoise(n * 1.5 + vec3(t, t * 0.7, -t * 0.5));
-    float small = snoise(n * 4.2 - vec3(t * 1.4)) * 0.22;
-    float disp  = (big + small) * (0.26 + uScroll * 0.7);
+    float big   = snoise(n * uFreq + vec3(t, t * 0.7, -t * 0.5));
+    float small = snoise(n * uFreq * 2.8 - vec3(t * 1.4)) * 0.22;
+    float disp  = (big + small) * (uAmp + uScroll * 0.7);
 
-    float radius = (1.0 + disp) * (1.0 + aRandom * 0.07) * mix(0.35, 1.0, uIntro) * (1.0 + uScroll * 0.35);
+    float radius = (1.0 + disp) * (1.0 + aRandom * uSpread) * mix(0.35, 1.0, uIntro) * (1.0 + uScroll * 0.35);
     vec3 pos = n * radius;
 
     // Вибух: кожна точка летить назовні зі своєю швидкістю й трохи закручується
     float e = uExplode * uExplode;
-    pos += n * e * (0.8 + aRandom * 3.4) * uExplodeAmp;
-    pos += vec3(-n.z, 0.0, n.x) * e * (aRandom - 0.5) * 2.4 * uExplodeAmp;
+    pos += n * e * (0.8 + aRandom * 3.4);
+    pos += vec3(-n.z, 0.0, n.x) * e * (aRandom - 0.5) * 2.4;
 
     // Перша проєкція — дізнаємось, де точка на екрані
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -963,8 +969,8 @@ const VERTEX = /* glsl */`
 
     gl_PointSize = uSize * uPixelRatio * (0.55 + aRandom * 0.9) * (1.0 + m * 1.6) * (1.0 + e * 0.9) / -mv.z;
 
-    vGlow  = clamp(disp * 2.6 + m * 1.6 + e * 0.9, 0.0, 1.0);
-    vAlpha = mix(0.18, 1.0, smoothstep(7.4, 5.0, -mv.z)) * uIntro * (1.0 - smoothstep(0.55, 1.0, uExplode));
+    vGlow  = clamp(disp * 2.6 + m * 1.6 + e * 0.9 + uGlow, 0.0, 1.0);
+    vAlpha = mix(0.18, 1.0, smoothstep(7.4, 5.0, -mv.z)) * uIntro * (1.0 - smoothstep(0.55, 1.0, uExplode)) * uDim;
   }
 `;
 
@@ -1006,19 +1012,27 @@ async function initHero3D() {
     return;
   }
 
+  // «Сфера-провідник»: полотно стає фоном усього сайту й веде нас між блоками.
+  // Лише коли працюють анімації; інакше — як раніше, тільки на першому екрані.
+  const STATIC = REDUCED;
+  const GUIDE = !STATIC && HAS_GSAP && !!window.ScrollTrigger;
+  if (GUIDE) {
+    document.body.prepend(canvas);
+    canvas.classList.add('is-guide');
+  }
+
   // ---- Рівні якості. Якщо кадрів мало — сцена сама спускається на рівень нижче ----
-  // crop: малюємо лише прямокутник навколо сфери, а не весь екран (полотно в 2 рази менше)
-  // lite: зерно стає нерухомим фоном замість окремого шару поверх сторінки
-  // frameMs: мінімальний інтервал між кадрами сфери (33 = ~30 FPS для найслабших пристроїв)
+  // pr: чіткість полотна; frac: частка частинок; frameMs: мінімальний інтервал між кадрами;
+  // lite: зерно стає нерухомим фоном; size: менше частинок → трохи більші
   const dpr = window.devicePixelRatio || 1;
   const QUALITY = [
-    { pr: Math.min(dpr, 1.5), frac: 1,    crop: false, frameMs: 12 },
-    { pr: Math.min(dpr, 1),   frac: 1,    crop: false, frameMs: 12 },
-    { pr: Math.min(dpr, 1),   frac: 0.55, crop: true,  frameMs: 12, size: 1.25 },
-    { pr: Math.min(dpr, 1),   frac: 0.4,  crop: true,  frameMs: 33, size: 1.35 },
+    { pr: Math.min(dpr, 1.5),  frac: 1,    frameMs: 12 },
+    { pr: Math.min(dpr, 1),    frac: 1,    frameMs: 12 },
+    { pr: Math.min(dpr, 0.8),  frac: 0.55, frameMs: 16, size: 1.25, lite: true },
+    { pr: Math.min(dpr, 0.65), frac: 0.4,  frameMs: 33, size: 1.35, lite: true },
   ];
   const COUNT = IS_MOBILE ? 5000 : 10000;
-  const DUST = IS_MOBILE ? 150 : 400;
+  const DUST = IS_MOBILE ? 350 : 900; // зорі на фоні
 
   renderer.setClearColor(0x000000, 0);
 
@@ -1031,7 +1045,7 @@ async function initHero3D() {
     gpuName = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
   } catch (e) { /* назва недоступна — вважаємо відеокарту звичайною */ }
   const SOFTWARE_GPU = /swiftshader|basic render|llvmpipe|softpipe|software/i.test(gpuName || '');
-  const STATIC = REDUCED;
+  window.__gpu = gpuName;
 
   let level = SOFTWARE_GPU ? 2 : (IS_MOBILE ? 1 : 0);
   renderer.setPixelRatio(QUALITY[level].pr);
@@ -1040,8 +1054,7 @@ async function initHero3D() {
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
   camera.position.z = 6;
 
-  // Сфера Фібоначчі — рівномірно розподілені точки.
-  // Порядок перемішаний, щоб «перші N точок» теж покривали всю сферу (для нижчих рівнів якості).
+  // ---- Сфера Фібоначчі. Порядок точок перемішаний, щоб «перші N» (нижчі рівні якості) покривали всю сферу ----
   const order = Array.from({ length: COUNT }, (_, i) => i);
   for (let i = COUNT - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -1063,6 +1076,8 @@ async function initHero3D() {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
+  // «пухка хмара» й вибух виходять за одиничну сферу — щоб Three.js не відкидав їх як «невидимі»
+  geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 4);
 
   const accent = getComputedStyle(html).getPropertyValue('--accent').trim() || '#a374ff';
   const uniforms = {
@@ -1074,7 +1089,12 @@ async function initHero3D() {
     uPixelRatio: { value: QUALITY[level].pr },
     uScroll: { value: 0 },
     uExplode: { value: 0 },
-    uExplodeAmp: { value: 1 },
+    uAmp: { value: 0.26 },
+    uFreq: { value: 1.5 },
+    uSpread: { value: 0.07 },
+    uFlow: { value: 1 },
+    uGlow: { value: 0 },
+    uDim: { value: 1 },
     uIntro: { value: STATIC ? 1 : 0 },
     uColorA: { value: new THREE.Color(accent) },
     uColorB: { value: new THREE.Color('#a4a4b2') },
@@ -1092,82 +1112,145 @@ async function initHero3D() {
   const root = new THREE.Group();   // позиція на екрані
   const tilt = new THREE.Group();   // нахил за мишею
   const sphere = new THREE.Points(geometry, material);
+  sphere.frustumCulled = false;
   tilt.add(sphere);
   root.add(tilt);
   scene.add(root);
 
-  // Пил навколо — дрібні точки
-  const dustPos = new Float32Array(DUST * 3);
+  // ---- Зоряне поле: ми «летимо» крізь зорі, а сфера нас переслідує ----
+  // Кожна зоря має фазу глибини (z 0..1); uTravel зсуває всі фази — зорі летять назустріч.
+  // При швидкому скролі ближні зорі витягуються в штрихи від центру екрана.
+  const starPos = new Float32Array(DUST * 3);
+  const starRnd = new Float32Array(DUST);
   for (let i = 0; i < DUST; i++) {
-    dustPos[i * 3] = (Math.random() - 0.5) * 12;
-    dustPos[i * 3 + 1] = (Math.random() - 0.5) * 8;
-    dustPos[i * 3 + 2] = (Math.random() - 0.5) * 6;
+    starPos[i * 3] = Math.random() * 2 - 1;
+    starPos[i * 3 + 1] = Math.random() * 2 - 1;
+    starPos[i * 3 + 2] = Math.random();
+    starRnd[i] = Math.random();
   }
-  const dustGeo = new THREE.BufferGeometry();
-  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
-    color: 0x9a9aa6, size: 0.014, sizeAttenuation: true, transparent: true, opacity: 0.55, depthWrite: false,
+  const starGeo = new THREE.BufferGeometry();
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  starGeo.setAttribute('aRandom', new THREE.BufferAttribute(starRnd, 1));
+  const starUniforms = {
+    uTravel: { value: 0 },
+    uSpeed: { value: 0 },          // -1..1: напрям і швидкість польоту (від скролу)
+    uPixelRatio: uniforms.uPixelRatio,
+    uIntro: uniforms.uIntro,
+    uColorA: uniforms.uColorA,
+  };
+  const stars = new THREE.Points(starGeo, new THREE.ShaderMaterial({
+    uniforms: starUniforms,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    vertexShader: /* glsl */`
+      uniform float uTravel;
+      uniform float uSpeed;
+      uniform float uPixelRatio;
+      uniform float uIntro;
+      attribute float aRandom;
+      varying float vAlpha;
+      varying vec2 vDir;
+      varying float vStretch;
+      varying float vAccent;
+      void main() {
+        float z = fract(position.z + uTravel);          // 0 — далеко, 1 — зовсім поруч
+        vec3 p = vec3(position.x * 16.0, position.y * 10.0, -42.0 + z * 46.0);
+        vec4 mv = modelViewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        vec2 ndc = gl_Position.xy / gl_Position.w;
+        vDir = normalize(ndc + vec2(0.0001));
+        float near = smoothstep(0.35, 1.0, z);
+        vStretch = 1.0 + min(abs(uSpeed), 1.0) * 7.0 * near;   // штрих тим довший, чим швидше й ближче
+        float size = (1.0 + aRandom * 1.6) * (1.0 + z * 2.2) * uPixelRatio;
+        gl_PointSize = size * vStretch;
+        vAlpha = smoothstep(0.0, 0.25, z) * (1.0 - smoothstep(0.9, 1.0, z)) * (0.3 + aRandom * 0.7) * uIntro;
+        vAccent = step(0.85, aRandom);
+      }
+    `,
+    fragmentShader: /* glsl */`
+      uniform vec3 uColorA;
+      varying float vAlpha;
+      varying vec2 vDir;
+      varying float vStretch;
+      varying float vAccent;
+      void main() {
+        vec2 p = gl_PointCoord - 0.5;
+        p.y = -p.y;
+        float along = dot(p, vDir);
+        float across = dot(p, vec2(-vDir.y, vDir.x)) * vStretch;
+        float r = length(vec2(along, across)) * 2.0;
+        if (r > 1.0) discard;
+        float a = (1.0 - r) * (1.0 - r);
+        vec3 col = mix(vec3(0.86, 0.86, 0.93), uColorA, vAccent);
+        gl_FragColor = vec4(col, a * vAlpha);
+      }
+    `,
   }));
-  scene.add(dust);
+  stars.frustumCulled = false;
+  scene.add(stars);
 
   // ---- Розмір і композиція ----
-  // view — прямокутник (у пікселях hero), який реально малює полотно
-  const view = { x: 0, y: 0, w: 1, h: 1, W: 1, H: 1 };
-  const layout = { x: 0, y: 0, s: 1 }; // базова позиція сфери (до ефектів скролу)
+  const layout = { x: 0, y: 0, s: 1 }; // позиція сфери на першому екрані
+  let stagesPlace = [];                // позиції фігур для кожного блоку
   const resize = () => {
-    const W = hero.clientWidth;
-    const H = hero.clientHeight;
+    const W = GUIDE ? window.innerWidth : hero.clientWidth;
+    const H = GUIDE ? window.innerHeight : hero.clientHeight;
     camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W, H, false);
+    uniforms.uAspect.value = W / H;
 
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
     const halfW = halfH * camera.aspect;
-    if (camera.aspect > 1.05) {
+    const wide = camera.aspect > 1.05;
+    if (wide) {
       // Десктоп: сфера праворуч, за текстом
-      root.position.set(halfW * 0.38, halfH * 0.08, 0);
-      root.scale.setScalar(Math.min(1.25, halfH * 0.62));
+      Object.assign(layout, { x: halfW * 0.38, y: halfH * 0.08, s: Math.min(1.25, halfH * 0.62) });
     } else {
       // Телефон / портрет: сфера вгорі по центру
-      root.position.set(0, halfH * 0.22, 0);
-      root.scale.setScalar(Math.min(halfW * 0.92, 1.1));
+      Object.assign(layout, { x: 0, y: halfH * 0.22, s: Math.min(halfW * 0.92, 1.1) });
     }
-
-    Object.assign(layout, { x: root.position.x, y: root.position.y, s: root.scale.x });
-
-    let x = 0, y = 0, w = W, h = H;
-    if (QUALITY[level].crop) {
-      // Квадрат навколо сфери із запасом на «дихання» і відштовхування мишею
-      const ppu = H / (2 * halfH);
-      const cx = W / 2 + root.position.x * ppu;
-      const cy = H / 2 - root.position.y * ppu;
-      const R = root.scale.x * 2.0 * ppu;
-      x = Math.max(0, Math.floor(cx - R));
-      y = Math.max(0, Math.floor(cy - R));
-      w = Math.min(W, Math.ceil(cx + R)) - x;
-      h = Math.min(H, Math.ceil(cy + R)) - y;
-      camera.setViewOffset(W, H, x, y, w, h);
-      Object.assign(canvas.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, right: 'auto', bottom: 'auto' });
-    } else {
-      camera.clearViewOffset();
-      Object.assign(canvas.style, { left: '', top: '', width: '', height: '', right: '', bottom: '' });
+    // «Настрій» сфери в кожному блоці. Це одна й та сама сфера — змінюються лише характер і місце:
+    //   amp — наскільки «хвилюється», freq — дрібні/великі хвилі, spread — чітка куля / пухка хмара,
+    //   flow — швидкість течії, glow — фіолетове світіння, sx/sy — витягнутість, spin — обертання,
+    //   dim — яскравість. На десктопі сфера весь час праворуч, на телефоні — по центру й тьмяніше.
+    const mood = (o) => ({ amp: 0.26, freq: 1.5, spread: 0.07, flow: 1, glow: 0, sx: 1, sy: 1, spin: 0.07, dim: 1, ...o });
+    stagesPlace = wide ? [
+      // фраза: після вибуху збирається в м'яку хмару, що повільно колишеться
+      mood({ x: halfW * 0.56, y: -halfH * 0.02, s: Math.min(0.75, halfH * 0.4), amp: 0.34, freq: 1.0, spread: 0.1, flow: 0.7, glow: 0.05, spin: 0.05, dim: 0.85 }),
+      // «Що я роблю»: маленька, дрібна жвава брижа, крутиться швидше — енергія (праворуч від заголовка)
+      mood({ x: halfW * 0.62, y: halfH * 0.64, s: Math.min(0.3, halfH * 0.16), amp: 0.18, freq: 3.2, spread: 0.04, flow: 1.8, glow: 0.12, spin: 0.35, dim: 0.6 }),
+      // Сфера ніколи не розтягується (інакше виглядає як розтягнута картинка) — характер дає лише поверхня.
+      // «Роботи»: невелика, великі повільні хвилі, ніби переливається — потік (між заголовком і стрілками)
+      mood({ x: halfW * 0.12, y: halfH * 0.6, s: Math.min(0.3, halfH * 0.16), amp: 0.3, freq: 1.2, spread: 0.05, flow: 1.6, glow: 0.12, spin: 0.08, dim: 0.75 }),
+      // «Як я працюю»: рівна, спокійна, дрібна стримана брижа — фокус
+      mood({ x: halfW * 0.58, y: 0, s: Math.min(0.78, halfH * 0.42), amp: 0.12, freq: 2.6, spread: 0.03, flow: 0.6, glow: 0.06, spin: 0.06, dim: 0.75 }),
+      // «Контакти»: яскравіша, більше фіолетового — запрошення
+      mood({ x: halfW * 0.6, y: halfH * 0.02, s: Math.min(0.85, halfH * 0.45), amp: 0.3, freq: 1.5, spread: 0.08, flow: 1.1, glow: 0.3, spin: 0.15, dim: 0.9 }),
+    ] : [
+      mood({ x: 0, y: halfH * 0.1,  s: halfW * 0.7,  amp: 0.42, freq: 1.0, spread: 0.16, flow: 0.7, spin: 0.05, dim: 0.45 }),
+      mood({ x: 0, y: halfH * 0.55, s: halfW * 0.32, amp: 0.18, freq: 3.2, spread: 0.04, flow: 1.8, glow: 0.15, spin: 0.35, dim: 0.6 }),
+      mood({ x: 0, y: halfH * 0.58, s: halfW * 0.3,  amp: 0.3, freq: 1.2, spread: 0.05, flow: 1.6, glow: 0.12, spin: 0.08, dim: 0.5 }),
+      mood({ x: 0, y: 0,            s: halfW * 0.5,  amp: 0.12, freq: 2.6, spread: 0.03, flow: 0.6, spin: 0.06, dim: 0.35 }),
+      mood({ x: 0, y: -halfH * 0.35, s: halfW * 0.72, amp: 0.3, freq: 1.5, spread: 0.08, flow: 1.1, glow: 0.3, spin: 0.15, dim: 0.6 }),
+    ];
+    if (!GUIDE || STATIC) {
+      root.position.set(layout.x, layout.y, 0);
+      root.scale.setScalar(layout.s);
     }
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h, false);
-    Object.assign(view, { x, y, w, h, W, H });
-    uniforms.uAspect.value = w / h;
     if (STATIC) renderer.render(scene, camera);
   };
-  new ResizeObserver(resize).observe(hero);
+  if (GUIDE) window.addEventListener('resize', resize);
+  else new ResizeObserver(resize).observe(hero);
 
   const applyQuality = () => {
     const q = QUALITY[level];
     renderer.setPixelRatio(q.pr);
     uniforms.uPixelRatio.value = q.pr;
-    // менше частинок → трохи більші, щоб сфера не ставала блідою
     uniforms.uSize.value = (IS_MOBILE ? 22 : 21) * (q.size || 1);
     geometry.setDrawRange(0, Math.floor(COUNT * q.frac));
-    dust.visible = !q.crop;                  // пил по всьому екрану в обрізаному полотні не вміщається
-    uniforms.uExplodeAmp.value = q.crop ? 0.3 : 1; // в обрізаному полотні вибух має вміститися
-    html.classList.toggle('lite', q.crop);   // зерно → нерухомий фон
+    html.classList.toggle('lite', !!q.lite);   // зерно → нерухомий фон
     resize();
     window.__heroQuality = level;
   };
@@ -1181,18 +1264,45 @@ async function initHero3D() {
     return;
   }
 
+  // ---- Де починається кожен блок: звідси рахуємо, яку фігуру показувати ----
+  // Перехід до фігури блоку — поки його верх їде від 60 % до 15 % висоти екрана
+  // (пізніше, ніж з'являється блок, — щоб фігура не мінялась, поки дочитуєш попередній)
+  const STAGE_SECTIONS = ['.statement', '#services', '#work', '#process', '#contact'];
+  let stops = [];
+  const measure = () => {
+    const H = window.innerHeight;
+    stops = STAGE_SECTIONS.map((sel) => {
+      const el = $(sel);
+      if (!el) return null;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      return { start: top - H * 0.6, end: top - H * 0.15 };
+    }).filter(Boolean);
+  };
+  if (GUIDE) {
+    window.ScrollTrigger.addEventListener('refresh', measure);
+    measure();
+  }
+
   // ---- Взаємодія з мишею / пальцем ----
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   let hoverTarget = 0;
-  hero.addEventListener('pointermove', (e) => {
-    // hero починається з самого верху сторінки, тож ділимо на розмір вікна без getBoundingClientRect
-    mouse.tx = (e.clientX / hero.clientWidth) * 2 - 1;
-    mouse.ty = -(((e.clientY + window.scrollY) / hero.clientHeight) * 2 - 1);
+  let lastActive = performance.now(); // коли востаннє гортали/рухали мишею (для економії енергії)
+  const target = GUIDE ? window : hero;
+  target.addEventListener('pointermove', (e) => {
+    if (GUIDE) {
+      mouse.tx = (e.clientX / window.innerWidth) * 2 - 1;
+      mouse.ty = -((e.clientY / window.innerHeight) * 2 - 1);
+    } else {
+      mouse.tx = (e.clientX / hero.clientWidth) * 2 - 1;
+      mouse.ty = -(((e.clientY + window.scrollY) / hero.clientHeight) * 2 - 1);
+    }
     hoverTarget = 1;
+    lastActive = performance.now();
   }, { passive: true });
-  hero.addEventListener('pointerleave', () => { hoverTarget = 0; });
+  (GUIDE ? document : hero).addEventListener('pointerleave', () => { hoverTarget = 0; });
+  window.addEventListener('scroll', () => { lastActive = performance.now(); }, { passive: true });
 
-  // ---- Анімація появи і зв'язок зі скролом ----
+  // ---- Анімація появи ----
   if (HAS_GSAP) {
     // сфера «збирається», коли прелоадер піднімається
     pageReady.then(() => window.gsap.to(uniforms.uIntro, { value: 1, duration: 2.6, ease: 'expo.out', delay: 0.1 }));
@@ -1200,24 +1310,28 @@ async function initHero3D() {
     uniforms.uIntro.value = 1;
   }
 
-  // ---- Цикл рендеру (зупиняється, коли сцена не видна) ----
+  // ---- Цикл рендеру ----
   const clock = new THREE.Clock();
   let running = false;
   let inView = true;
-
-  // На екранах 120/144 Гц сцену малюємо приблизно 60 разів на секунду —
-  // для повільної сфери різниці не видно, а відеокарта звільняється для курсора й скролу.
   let lastRender = 0;
+  let ySmooth = window.scrollY;
+  const chase = { y: 0, z: 0 };   // відставання сфери під час швидкого «польоту»
+  // поточний «настрій» сфери — щокадру м'яко підтягується до цільового
+  const moodNow = {
+    x: layout.x, y: layout.y, s: layout.s,
+    amp: 0.26, freq: 1.5, spread: 0.07, flow: 1, glow: 0, sx: 1, sy: 1, spin: 0.07, dim: 1,
+  };
 
   // Автопідлаштування: рахуємо кадри у вікнах по 1 с.
-  // Два «повільні» вікна поспіль (< 50 FPS) → знижуємо якість. Вгору не повертаємось, щоб не «стрибало».
+  // Два «повільні» вікна поспіль (< 50 FPS) → знижуємо якість; якщо не допомогло — повертаємо.
   let winStart = 0;
   let winFrames = 0;
   let slowWindows = 0;
-  let fpsBeforeDrop = 0;   // FPS до останнього зниження якості
-  let checkWindows = 0;    // скільки вікон міряємо після зниження
+  let fpsBeforeDrop = 0;
+  let checkWindows = 0;
   let checkSum = 0;
-  let adaptDone = false;   // зниження не допомагає → більше не чіпаємо
+  let adaptDone = false;
   const warmUntil = performance.now() + 1500; // перші 1.5 с завантажуються шрифти — не рахуємо
   const monitor = (now) => {
     if (now < warmUntil) return;
@@ -1229,23 +1343,16 @@ async function initHero3D() {
     winStart = now;
     winFrames = 0;
     if (adaptDone) return;
-
-    // Після зниження якості перевіряємо, чи це взагалі допомогло
     if (checkWindows > 0) {
       checkSum += fps;
       checkWindows--;
-      if (checkWindows === 0) {
-        const after = checkSum / 2;
-        if (after < fpsBeforeDrop * 1.1) {
-          // Приросту немає — гальмує не сфера. Повертаємо якість і зупиняємо адаптацію.
-          level--;
-          applyQuality();
-          adaptDone = true;
-        }
+      if (checkWindows === 0 && checkSum / 2 < fpsBeforeDrop * 1.1) {
+        level--;            // приросту немає — гальмує не сфера
+        applyQuality();
+        adaptDone = true;
       }
       return;
     }
-
     slowWindows = fps < 50 ? slowWindows + 1 : 0;
     if (slowWindows >= 2 && level < QUALITY.length - 1) {
       fpsBeforeDrop = fps;
@@ -1257,12 +1364,23 @@ async function initHero3D() {
     }
   };
 
+  const lerp = THREE.MathUtils.lerp;
   const frame = () => {
     if (!running) return;
     requestAnimationFrame(frame);
     const now = performance.now();
     monitor(now);
-    if (now - lastRender < QUALITY[level].frameMs) return;
+    // Економія енергії, коли нічого не відбувається:
+    //  • звичайна відеокарта — через 2.5 с малюємо ~30 разів на секунду;
+    //  • слабка / програмна (легкий режим) — через 1.2 с фігура «завмирає» й не перемальовується,
+    //    бо без відеокарти браузер щокадру змішує з нею весь вміст сторінки, а це дорого.
+    //    Щойно гортаєш або рухаєш мишею — вона знову оживає.
+    const q = QUALITY[level];
+    const quiet = now - lastActive;
+    const introDone = uniforms.uIntro.value >= 0.999;
+    if (GUIDE && q.lite && quiet > 1200 && introDone && Math.abs(window.scrollY - ySmooth) < 0.5) return;
+    const minMs = quiet > 2500 ? Math.max(33, q.frameMs) : q.frameMs;
+    if (now - lastRender < minMs) return;
     lastRender = now;
     const dt = Math.min(clock.getDelta(), 0.05);
     uniforms.uTime.value += dt;
@@ -1270,29 +1388,66 @@ async function initHero3D() {
     const k = 1 - Math.pow(1 - 0.12, dt * 60);
     mouse.x += (mouse.tx - mouse.x) * k;
     mouse.y += (mouse.ty - mouse.y) * k;
-    // Миша в координатах полотна (воно може бути обрізаним прямокутником навколо сфери)
-    const px = ((mouse.x + 1) / 2) * view.W;
-    const py = ((1 - mouse.y) / 2) * view.H;
-    uniforms.uMouse.value.set(((px - view.x) / view.w) * 2 - 1, -(((py - view.y) / view.h) * 2 - 1));
+    uniforms.uMouse.value.set(mouse.x, mouse.y);
     uniforms.uHover.value += (hoverTarget - uniforms.uHover.value) * 0.05;
 
-    // Скрол першого екрану: сфера виходить у центр, росте, потім вибухає
+    // Перший екран: сфера виходить у центр, росте, потім вибухає
     const p = heroScroll.p;
     const move = THREE.MathUtils.smootherstep(p, 0, 0.6);
-    const crop = QUALITY[level].crop;
-    uniforms.uScroll.value = move * (crop ? 0.4 : 1);
-    uniforms.uExplode.value = THREE.MathUtils.smoothstep(p, 0.35, 1);
-    if (!crop) {
-      root.position.x = layout.x * (1 - move);
-      root.position.y = layout.y * (1 - move);
-      root.scale.setScalar(layout.s * (1 + move * 0.3));
+    const heroExplode = THREE.MathUtils.smoothstep(p, 0.35, 1);
+
+    // Цільовий «настрій»: на першому екрані — як було (сфера виходить у центр і вибухає),
+    // далі — плавно змішуємо настрої блоків залежно від того, де ми на сторінці
+    const target = {
+      x: layout.x * (1 - move), y: layout.y * (1 - move), s: layout.s * (1 + move * 0.3),
+      amp: 0.26, freq: 1.5, spread: 0.07, flow: 1, glow: 0, sx: 1, sy: 1, spin: 0.07 + move * 0.5, dim: 1,
+    };
+    let regroup = 0;
+    if (GUIDE) {
+      ySmooth += (window.scrollY - ySmooth) * (1 - Math.pow(1 - 0.18, dt * 60));
+      stops.forEach((s, i) => {
+        const t = THREE.MathUtils.clamp((ySmooth - s.start) / (s.end - s.start), 0, 1);
+        if (i === 0) regroup = t;
+        const e = THREE.MathUtils.smootherstep(t, 0, 1);
+        const st = stagesPlace[i];
+        if (!st || e === 0) return;
+        for (const key in target) target[key] = lerp(target[key], st[key], e);
+      });
     }
 
-    sphere.rotation.y += dt * (0.07 + move * 0.5); // при скролі сфера розкручується
+    // Сфера не стрибає до цілі, а м'яко «допливає» (~0.6 с) — навіть при різкому скролі.
+    // На першому екрані (поки вона прив'язана до вибуху) — майже без затримки.
+    const follow = regroup > 0 ? 0.06 : 0.35;
+    const kf = 1 - Math.pow(1 - follow, dt * 60);
+    for (const key in target) moodNow[key] += (target[key] - moodNow[key]) * kf;
+
+    // Політ крізь зорі: повільно пливемо завжди, а скрол розганяє (униз — уперед, угору — назад)
+    const v = scrollSpeed.smooth;                                   // px/с
+    const speed = THREE.MathUtils.clamp(v / 2600, -1, 1);
+    starUniforms.uSpeed.value += (speed - starUniforms.uSpeed.value) * kf * 1.5;
+    starUniforms.uTravel.value += dt * (0.012 + v * 0.00011);
+
+    // Сфера «переслідує»: при швидкому польоті трохи відстає й відходить углиб, потім наздоганяє
+    chase.y += ((-starUniforms.uSpeed.value * 0.35) - chase.y) * kf;
+    chase.z += ((-Math.abs(starUniforms.uSpeed.value) * 0.9) - chase.z) * kf;
+
+    root.position.set(moodNow.x, moodNow.y + chase.y, chase.z);
+    root.scale.set(moodNow.s * moodNow.sx, moodNow.s * moodNow.sy, moodNow.s);
+    uniforms.uAmp.value = moodNow.amp;
+    uniforms.uFreq.value = moodNow.freq;
+    uniforms.uSpread.value = moodNow.spread;
+    uniforms.uFlow.value = moodNow.flow;
+    uniforms.uGlow.value = moodNow.glow;
+    uniforms.uDim.value = moodNow.dim;
+    uniforms.uScroll.value = move * (1 - regroup);
+    uniforms.uExplode.value = heroExplode * (1 - THREE.MathUtils.smoothstep(regroup, 0, 0.85));
+
+    sphere.rotation.y += dt * moodNow.spin; // при скролі першого екрана сфера розкручується
     tilt.rotation.x += (-mouse.y * 0.35 - tilt.rotation.x) * 0.05;
     tilt.rotation.y += (mouse.x * 0.5 - tilt.rotation.y) * 0.05;
-    dust.rotation.y += dt * 0.012;
-    dust.rotation.x = mouse.y * 0.05;
+    stars.rotation.z += dt * 0.004;              // ледь помітне обертання неба
+    stars.rotation.x = mouse.y * 0.03;           // і легкий паралакс за мишею
+    stars.rotation.y = -mouse.x * 0.03;
 
     renderer.render(scene, camera);
   };
@@ -1303,9 +1458,32 @@ async function initHero3D() {
     else if (!shouldRun) running = false;
   };
 
-  new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; update(); }).observe(hero);
+  // Провідник видно завжди; без нього — малюємо лише поки видно перший екран
+  if (!GUIDE) new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; update(); }).observe(hero);
   document.addEventListener('visibilitychange', update);
   update();
+}
+
+/* =========================================================
+   Лічильник FPS для перевірки на своєму комп'ютері: додай ?fps до адреси
+   ========================================================= */
+function initFpsMeter() {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;top:5rem;left:1rem;z-index:400;padding:.45rem .7rem;border-radius:8px;background:#000d;color:#fff;font:12px/1.4 ui-monospace,monospace;pointer-events:none;white-space:pre';
+  document.body.appendChild(box);
+  let frames = 0;
+  let start = performance.now();
+  const loop = (now) => {
+    frames++;
+    if (now - start >= 500) {
+      const fps = Math.round((frames * 1000) / (now - start));
+      box.textContent = `${fps} FPS · quality ${window.__heroQuality ?? '–'}\nGPU: ${(window.__gpu || '—').slice(0, 60)}`;
+      frames = 0;
+      start = now;
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
 }
 
 /* =========================================================
@@ -1377,6 +1555,7 @@ function init() {
 
   initHero3D();
   initGrain();
+  if (new URLSearchParams(location.search).has('fps')) initFpsMeter();
 }
 
 /* =========================================================
