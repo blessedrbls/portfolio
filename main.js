@@ -177,8 +177,9 @@ function initScroll() {
   if (REDUCED || !HAS_GSAP || typeof window.Lenis === 'undefined') return;
 
   lenis = new window.Lenis({
-    duration: 1.15,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    // lerp замість duration: скрол одразу відгукується на колесо і не «пливе» після нього
+    lerp: 0.14,
+    wheelMultiplier: 1,
     smoothWheel: true,
   });
 
