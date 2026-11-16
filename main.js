@@ -385,7 +385,7 @@ function initScrollMotion() {
     scrollSpeed.raw *= 0.9; // коли скрол зупинився — швидкість плавно згасає
     scrollSpeed.smooth += (scrollSpeed.raw - scrollSpeed.smooth) * 0.12;
     if (setSkew) {
-      const skew = gsap.utils.clamp(-6, 6, scrollSpeed.smooth * -0.0035);
+      const skew = gsap.utils.clamp(-3.5, 3.5, scrollSpeed.smooth * -0.0025);
       if (Math.abs(skew - lastSkew) > 0.01) { setSkew(skew); lastSkew = skew; }
     }
   });
@@ -435,7 +435,8 @@ function initMarquee() {
     const dt = Math.min(deltaMs, 50) / 1000;
     const v = scrollSpeed.smooth;
     if (Math.abs(v) > 30) direction = v > 0 ? 1 : -1;
-    const speed = 70 + Math.min(Math.abs(v) * 0.35, 1600); // px/с
+    // px/с: спокійна база + помірне прискорення від скролу (обмежене, щоб текст лишався читабельним)
+    const speed = 60 + Math.min(Math.abs(v) * 0.15, 360);
     marqueeRows.forEach((r) => {
       if (!r.width) r.width = r.track.scrollWidth / 2;
       if (!r.width) return;
