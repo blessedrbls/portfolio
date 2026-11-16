@@ -716,6 +716,7 @@ html.lenis, html.lenis body { height: auto; }
 }
 .project-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.6rem;
@@ -735,6 +736,10 @@ html.lenis, html.lenis body { height: auto; }
 .project-btn svg { width: 0.9em; height: 0.9em; }
 .project-btn--demo { background: var(--accent); color: var(--accent-ink); }
 .project-btn--demo:hover { background: var(--fg); }
+.project-btn--case { border: 1px solid var(--accent); color: var(--fg); }
+.project-btn--case:hover { background: var(--accent); color: var(--accent-ink); }
+.project-title a { transition: color 0.3s; }
+.project-title a:hover { color: var(--accent); }
 .project-btn--code { border: 1px solid var(--line); color: var(--fg); }
 .project-btn--code:hover { border-color: var(--fg); }
 
@@ -746,6 +751,7 @@ html.lenis, html.lenis body { height: auto; }
     transition: opacity 0.45s var(--ease-out), transform 0.45s var(--ease-out), background-color 0.3s, color 0.3s, border-color 0.3s;
   }
   .js:not(.reduced) .project-actions > :nth-child(2) { transition-delay: 0.06s, 0.06s, 0s, 0s, 0s; }
+  .js:not(.reduced) .project-actions > :nth-child(3) { transition-delay: 0.12s, 0.12s, 0s, 0s, 0s; }
   .js:not(.reduced) .project-card:hover .project-actions > *,
   .js:not(.reduced) .project-card:focus-within .project-actions > * {
     opacity: 1;

@@ -14,6 +14,7 @@ Personal portfolio of Oleksii, a web developer building websites, landing pages,
 - **Reactive work section.** A native swipe/drag carousel (touch, trackpad, mouse drag, arrows, keyboard). Hovering a project tints the sphere with that project's colour.
 - **Scroll storytelling.** Pinned hero with a letter-by-letter exit, a statement whose words light up as you scroll, and a process timeline whose line draws itself.
 - **Services.** Cards with a 3D tilt and a neon border that follows the cursor.
+- **Case studies.** Each project has its own page (`work/<project>/`): the task, how it works, what was built, technical highlights, a screenshot gallery with full-screen zoom, and what it gives the business. Pages are static HTML, so search engines index them, and the language choice carries over from the main page.
 - **Easter egg.** Type `hello` (or click the logo five times).
 - Preloader, custom cursor, magnetic buttons, smooth scrolling (Lenis), film grain.
 - **Two languages.** Ukrainian (default) and English, with a smooth switch.
@@ -21,6 +22,8 @@ Personal portfolio of Oleksii, a web developer building websites, landing pages,
 ![Work section with project cards](images/readme-work.jpg)
 
 ![Process timeline](images/readme-process.jpg)
+
+![Case study page](images/readme-case.jpg)
 
 ## Performance and accessibility
 
@@ -49,4 +52,14 @@ Then open http://localhost:8000.
 
 ## Editing projects
 
-Projects are defined in the `PROJECTS` array at the top of `main.js`: title and description in Ukrainian and English, tags, image, tint colour, demo and code links, and an optional `preview` (`phone` or `desktop`) for the live demo frame. Cover images live in `images/` as 1600×1000 `.webp`, with a 1000 px wide `-1000.webp` copy for phones.
+Projects are defined in the `PROJECTS` array at the top of `main.js`: title and description in Ukrainian and English, tags, image, tint colour, demo and code links, an optional `preview` (`phone` or `desktop`) for the live demo frame, and a `case` link. Cover images live in `images/` as 1600×1000 `.webp`, with a 1000 px wide `-1000.webp` copy for phones.
+
+## Case study pages
+
+Case texts (both languages) live in `tools/cases-data.mjs`, and screenshots in `images/cases/<project>/`. After editing either, regenerate the pages and `sitemap.xml`:
+
+```bash
+node tools/build-cases.mjs
+```
+
+The generator reads covers, colours and links from `PROJECTS` in `main.js`, so they stay in one place. The generated `work/*/index.html` files are committed, so the site still needs no build step to deploy.

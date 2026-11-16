@@ -18,6 +18,7 @@ const PROJECTS = [
     kind: 'miniapp',
     motif: 'cup',
     image: 'images/coffee-miniapp.webp',
+    case: 'work/coffee-miniapp/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#d9a066',
     type: { uk: 'Mini App', en: 'Mini App' },
     title: { uk: "Telegram Mini App для кав'ярні", en: 'Coffee shop Telegram Mini App' },
@@ -34,6 +35,7 @@ const PROJECTS = [
     kind: 'bot',
     motif: 'calendar',
     image: 'images/booking-bot.webp',
+    case: 'work/booking-bot/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#5aa9ff', pulse: true,
     type: { uk: 'Telegram-бот', en: 'Telegram bot' },
     title: { uk: 'Бот онлайн-запису в барбершоп', en: 'Barbershop booking bot' },
@@ -49,6 +51,7 @@ const PROJECTS = [
     kind: 'site',
     motif: 'barber',
     image: 'images/barbershop-site.webp',
+    case: 'work/barbershop-site/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#d4b05a',
     type: { uk: 'Сайт', en: 'Website' },
     title: { uk: 'Сайт барбершопу', en: 'Barbershop website' },
@@ -65,6 +68,7 @@ const PROJECTS = [
     kind: 'site',
     motif: 'play',
     image: 'images/landing-course.webp',
+    case: 'work/landing-course/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#4c7dff',
     type: { uk: 'Лендінг', en: 'Landing page' },
     title: { uk: 'Лендінг онлайн-курсу', en: 'Online course landing page' },
@@ -81,6 +85,7 @@ const PROJECTS = [
     kind: 'bot',
     motif: 'bag',
     image: 'images/shop-bot.webp',
+    case: 'work/shop-bot/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#4fd1a5',
     type: { uk: 'Telegram-бот', en: 'Telegram bot' },
     title: { uk: 'Бот-магазин', en: 'Telegram shop bot' },
@@ -778,12 +783,13 @@ function renderProjects() {
       </div>
       <div class="project-body">
         <div class="project-meta mono"><span class="project-type">${both(p.type)}</span><span>${n(i + 1)} / ${n(PROJECTS.length)}</span></div>
-        <h3 class="project-title">${both(p.title)}</h3>
+        <h3 class="project-title">${p.case ? `<a href="${esc(p.case)}">${both(p.title)}</a>` : both(p.title)}</h3>
         <p class="project-desc">${both(p.desc)}</p>
         <ul class="project-tags" role="list">${p.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
         <div class="project-actions">
-          ${p.demo ? `<a class="project-btn project-btn--demo" href="${esc(p.demo)}" target="_blank" rel="noopener"${p.preview ? ` data-preview="${i}"` : ''}>${both({ uk: 'Демо', en: 'Demo' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
-          ${p.code ? `<a class="project-btn project-btn--code" href="${esc(p.code)}" target="_blank" rel="noopener">${both({ uk: 'Код', en: 'Code' })}<span class="sr-only">: ${both(p.title)}</span>${codeIcon}</a>` : ''}
+          ${p.demo ? `<a class="project-btn project-btn--demo" href="${esc(p.demo)}" target="_blank" rel="noopener" data-goatcounter-click="card-demo-${i}"${p.preview ? ` data-preview="${i}"` : ''}>${both({ uk: 'Демо', en: 'Demo' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
+          ${p.case ? `<a class="project-btn project-btn--case" href="${esc(p.case)}" data-goatcounter-click="card-case-${i}">${both({ uk: 'Кейс', en: 'Case study' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
+          ${p.code ? `<a class="project-btn project-btn--code" href="${esc(p.code)}" target="_blank" rel="noopener" data-goatcounter-click="card-code-${i}">${both({ uk: 'Код', en: 'Code' })}<span class="sr-only">: ${both(p.title)}</span>${codeIcon}</a>` : ''}
         </div>
       </div>
     </li>`).join('');
