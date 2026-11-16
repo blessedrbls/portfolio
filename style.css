@@ -143,30 +143,6 @@ html.lenis, html.lenis body { height: auto; }
 }
 .cursor.is-hover .cursor-dot { opacity: 0; }
 
-/* Підказка в кільці курсора: «Демо», «Тягни», «Клікни» */
-.cursor-label {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent-ink);
-  white-space: nowrap;
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.6);
-  transition: opacity 0.25s, transform 0.4s var(--ease-out);
-  pointer-events: none;
-}
-.cursor.has-label .cursor-ring span {
-  transform: scale(2.1);
-  background: var(--accent);
-  border-color: transparent;
-}
-.cursor.has-label .cursor-label { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.cursor.has-label .cursor-dot { opacity: 0; }
 .cursor.is-down .cursor-ring span { transform: scale(0.75); }
 .cursor.is-hover.is-down .cursor-ring span { transform: scale(1.45); }
 

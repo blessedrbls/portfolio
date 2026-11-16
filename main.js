@@ -147,9 +147,6 @@ const I18N = {
     'preview.tab': 'Відкрити в новій вкладці ↗',
     'preview.telegram': 'Відкрити в Telegram ↗',
     'preview.loading': 'Завантажую демо…',
-    'cursor.demo': 'Демо',
-    'cursor.drag': 'Тягни',
-    'cursor.click': 'Клікни',
     'egg.toast': '✦ Ви знайшли секрет — дякую, що зазирнули!',
     'statement.text': 'Кожен *сайт* і кожен *бот*, який я роблю, має одну мету — *приводити вам клієнтів*.',
   },
@@ -203,9 +200,6 @@ const I18N = {
     'preview.tab': 'Open in a new tab ↗',
     'preview.telegram': 'Open in Telegram ↗',
     'preview.loading': 'Loading the demo…',
-    'cursor.demo': 'Demo',
-    'cursor.drag': 'Drag',
-    'cursor.click': 'Click',
     'egg.toast': '✦ You found a secret — thanks for looking around!',
     'statement.text': 'Every *website* and every *bot* I build has one job: *bring you clients*.',
   },
@@ -427,28 +421,12 @@ function initCursor() {
     }
   }, { passive: true });
 
-  // Підказка в кільці курсора: «Демо» над картинкою проєкту, «Тягни» над каруселлю, «Клікни» над сферою
-  const label = $('.cursor-label', cursor);
-  let overInteractive = false;   // над посиланням / кнопкою — звичайне збільшення без підказки
-  let elementLabel = '';         // підказка від елемента під курсором (data-cursor-label)
-  let shownLabel = '';
-  const setLabel = (key) => {
-    if (key === shownLabel) return;
-    shownLabel = key;
-    const dict = I18N[currentLang] || I18N.uk;
-    if (key && label) label.textContent = dict[`cursor.${key}`] || '';
-    cursor.classList.toggle('has-label', !!key);
-  };
-
   function paint() {
     dirty = false;
     const t = `translate3d(${x}px, ${y}px, 0)`;
     dot.style.transform = t;
     ring.style.transform = t;
     cursor.classList.add('is-visible');
-    // над сферою (і не над текстом-посиланням) — підказка «Клікни»
-    const overSphere = !overInteractive && !elementLabel && window.__sphere?.hit(x, y);
-    setLabel(overInteractive ? '' : (elementLabel || (overSphere ? 'click' : '')));
   }
 
   document.addEventListener('pointerleave', () => cursor.classList.remove('is-visible'));
@@ -458,11 +436,7 @@ function initCursor() {
   // Збільшення над інтерактивними елементами
   document.addEventListener('pointerover', (e) => {
     const hit = e.target.closest('a, button, [data-cursor]');
-    const labelled = e.target.closest('[data-cursor-label]');
-    overInteractive = !!hit;
-    elementLabel = !hit && labelled ? labelled.dataset.cursorLabel : '';
     cursor.classList.toggle('is-hover', !!hit);
-    paint();
   });
 }
 
@@ -790,7 +764,7 @@ function renderProjects() {
 
   track.innerHTML = PROJECTS.map((p, i) => `
     <li class="project-card">
-      <div class="project-media"${p.preview || p.demo ? ' data-cursor-label="demo"' : ''}>
+      <div class="project-media">
         <div class="project-media-inner">
           ${p.image
             ? `<img src="${esc(p.image)}" alt="" loading="lazy" decoding="async" data-ph="${i}">`
@@ -947,7 +921,6 @@ function initPreview() {
 /* =========================================================
    Сфера реагує на сайт:
    • наведення на картку проєкту — сфера забарвлюється в колір проєкту (бот запису ще й «пульсує»);
-   • клік по сфері — ударна хвиля;
    • пасхалка: набрати «hello» / «привіт» або 5 разів швидко клікнути на логотип —
      феєрверк частинок і гіперстрибок крізь зорі.
    ========================================================= */
@@ -968,13 +941,7 @@ function initSphereFun() {
     track.addEventListener('pointerleave', () => { currentCard = null; sphere()?.tint(null); });
   }
 
-  // 2) Клік по сфері (а не по посиланню / кнопці / демо) — ударна хвиля
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('a, button, input, textarea, iframe, .preview, .project-card')) return;
-    if (sphere()?.hit(e.clientX, e.clientY)) sphere().burst(1);
-  });
-
-  // 3) Пасхалка
+  // 2) Пасхалка
   const toast = document.createElement('div');
   toast.className = 'egg-toast mono';
   toast.setAttribute('role', 'status');
@@ -1609,27 +1576,20 @@ async function initHero3D() {
     }
   };
 
-  // ---- «Пульт» сфери для решти сайту: наведення на проєкти, клік по сфері, пасхалка ----
+  // ---- «Пульт» сфери для решти сайту: наведення на проєкти й пасхалка ----
   const baseColor = new THREE.Color(accent);
   const tintTarget = baseColor.clone();
   const burstState = { v: 0 };
   let pulse = 0;
   let pulseTarget = 0;
   let hyper = 0;          // скільки секунд ще триває «гіперстрибок»
-  const tmpV = new THREE.Vector3();
-  const sphereScreen = () => {
-    root.getWorldPosition(tmpV).project(camera);
-    const H = window.innerHeight;
-    const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
-    return { x: ((tmpV.x + 1) / 2) * window.innerWidth, y: ((1 - tmpV.y) / 2) * H, r: moodNow.s * 1.2 * (H / (2 * halfH)) };
-  };
   window.__sphere = {
     tint(hex, doPulse = false) {            // забарвити сферу в колір проєкту (null — повернути свій)
       tintTarget.set(hex || baseColor);
       pulseTarget = doPulse ? 1 : 0;
       lastActive = performance.now();
     },
-    burst(strength = 1) {                    // ударна хвиля: частинки розлітаються й пружно повертаються
+    burst(strength = 1) {                    // залп для пасхалки: частинки розлітаються й пружно повертаються
       lastActive = performance.now();
       if (!HAS_GSAP) return;
       window.gsap.killTweensOf(burstState);
@@ -1638,11 +1598,6 @@ async function initHero3D() {
         .to(burstState, { v: 0, duration: 1.6, ease: 'elastic.out(1, 0.4)' });
     },
     hyper(seconds = 1.8) { hyper = seconds; lastActive = performance.now(); }, // ривок крізь зорі
-    hit(x, y) {                              // чи курсор над сферою (для кліку й підказки курсора)
-      if (!GUIDE || uniforms.uExplode.value > 0.3) return false;
-      const sc = sphereScreen();
-      return Math.hypot(x - sc.x, y - sc.y) < sc.r;
-    },
   };
 
   const lerp = THREE.MathUtils.lerp;
