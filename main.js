@@ -607,6 +607,10 @@ async function initHero3D() {
   let winStart = 0;
   let winFrames = 0;
   let slowWindows = 0;
+  let fpsBeforeDrop = 0;   // FPS до останнього зниження якості
+  let checkWindows = 0;    // скільки вікон міряємо після зниження
+  let checkSum = 0;
+  let adaptDone = false;   // зниження не допомагає → більше не чіпаємо
   const warmUntil = performance.now() + 1500; // перші 1.5 с завантажуються шрифти — не рахуємо
   const monitor = (now) => {
     if (now < warmUntil) return;
@@ -617,10 +621,31 @@ async function initHero3D() {
     const fps = (winFrames * 1000) / elapsed;
     winStart = now;
     winFrames = 0;
+    if (adaptDone) return;
+
+    // Після зниження якості перевіряємо, чи це взагалі допомогло
+    if (checkWindows > 0) {
+      checkSum += fps;
+      checkWindows--;
+      if (checkWindows === 0) {
+        const after = checkSum / 2;
+        if (after < fpsBeforeDrop * 1.1) {
+          // Приросту немає — гальмує не сфера. Повертаємо якість і зупиняємо адаптацію.
+          level--;
+          applyQuality();
+          adaptDone = true;
+        }
+      }
+      return;
+    }
+
     slowWindows = fps < 50 ? slowWindows + 1 : 0;
     if (slowWindows >= 2 && level < QUALITY.length - 1) {
+      fpsBeforeDrop = fps;
       level++;
       slowWindows = 0;
+      checkWindows = 2;
+      checkSum = 0;
       applyQuality();
     }
   };
@@ -650,8 +675,23 @@ async function initHero3D() {
     renderer.render(scene, camera);
   };
 
+  // Назва відеокарти — для лічильника FPS (видно, чи увімкнене апаратне прискорення)
+  try {
+    const gl = renderer.getContext();
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    window.__gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  } catch (e) { window.__gpu = 'unknown'; }
+
+  // Для лічильника FPS: можна вимкнути 3D, щоб побачити, скільки воно «з'їдає»
+  let disabled = false;
+  window.__hero3dToggle = (on) => {
+    disabled = !on;
+    canvas.style.visibility = on ? '' : 'hidden';
+    update();
+  };
+
   const update = () => {
-    const shouldRun = inView && !document.hidden;
+    const shouldRun = inView && !document.hidden && !disabled;
     if (shouldRun && !running) { running = true; winStart = 0; clock.getDelta(); frame(); }
     else if (!shouldRun) running = false;
   };
@@ -689,8 +729,34 @@ function initGrain() {
    ========================================================= */
 function initFpsMeter() {
   const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;top:5rem;left:1rem;z-index:400;padding:.4rem .7rem;border-radius:8px;background:#000c;color:#fff;font:12px/1.4 ui-monospace,monospace;pointer-events:none';
+  box.style.cssText = 'position:fixed;top:5rem;left:1rem;z-index:400;display:flex;flex-direction:column;gap:.4rem;padding:.6rem .7rem;border-radius:10px;background:#000d;color:#fff;font:12px/1.4 ui-monospace,monospace';
+  const info = document.createElement('div');
+  const gpu = document.createElement('div');
+  gpu.style.cssText = 'opacity:.7;max-width:22rem';
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:.35rem';
+  box.append(info, gpu, row);
+  setTimeout(() => { gpu.textContent = `GPU: ${window.__gpu || '—'}`; }, 1500);
   document.body.appendChild(box);
+
+  // Кнопки: вимкнути/увімкнути окремі ефекти й подивитись, як зміниться FPS
+  const toggles = [
+    ['3D', (on) => window.__hero3dToggle?.(on)],
+    ['Grain', (on) => { $('.grain').style.display = on ? '' : 'none'; }],
+    ['Cursor', (on) => { html.classList.toggle('has-cursor', on); }],
+  ];
+  toggles.forEach(([name, fn]) => {
+    const b = document.createElement('button');
+    let on = true;
+    const paint = () => {
+      b.textContent = `${name}: ${on ? 'on' : 'off'}`;
+      b.style.cssText = `padding:.25rem .5rem;border-radius:6px;font:inherit;cursor:pointer;color:${on ? '#000' : '#fff'};background:${on ? '#a374ff' : '#333'}`;
+    };
+    b.addEventListener('click', () => { on = !on; fn(on); paint(); });
+    paint();
+    row.appendChild(b);
+  });
+
   let frames = 0;
   let start = performance.now();
   const loop = (now) => {
@@ -698,7 +764,7 @@ function initFpsMeter() {
     if (now - start >= 500) {
       const fps = Math.round((frames * 1000) / (now - start));
       const q = window.__heroQuality ?? '–';
-      box.textContent = `${fps} FPS · quality ${q} · ${innerWidth}×${innerHeight} @${devicePixelRatio}x`;
+      info.textContent = `${fps} FPS · quality ${q} · ${innerWidth}×${innerHeight} @${devicePixelRatio}x`;
       frames = 0;
       start = now;
     }
