@@ -166,59 +166,6 @@ function revealHero(fast = false) {
 }
 
 /* =========================================================
-   ТИМЧАСОВО: палітри для вибору.
-   Після вибору лишимо одну, а перемикач видалимо.
-   Посилання на конкретну палітру: ?theme=pink
-   ========================================================= */
-const THEMES = {
-  lime:   { name: 'Lime',   accent: '#c8ff00', ink: '#07070a', bg: '#07070a' },
-  cyan:   { name: 'Cyan',   accent: '#00e5ff', ink: '#05080c', bg: '#05080c' },
-  pink:   { name: 'Pink',   accent: '#ff2e88', ink: '#0a0609', bg: '#0a0609' },
-  orange: { name: 'Orange', accent: '#ff5b1f', ink: '#0b0806', bg: '#0b0806' },
-  violet: { name: 'Violet', accent: '#a374ff', ink: '#07060c', bg: '#07060c' },
-  blue:   { name: 'Blue',   accent: '#3d6bff', ink: '#ffffff', bg: '#05060d' },
-};
-
-function applyTheme(key) {
-  const t = THEMES[key] || THEMES.lime;
-  const s = html.style;
-  s.setProperty('--accent', t.accent);
-  s.setProperty('--accent-ink', t.ink);
-  s.setProperty('--bg', t.bg);
-  $('meta[name="theme-color"]')?.setAttribute('content', t.bg);
-  $$('[data-theme-set]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeSet === key)));
-  const label = $('.theme-picker-label');
-  if (label) label.textContent = `Color: ${t.name}`;
-  try { localStorage.setItem('theme', key); } catch (e) { /* ignore */ }
-  window.dispatchEvent(new CustomEvent('themechange', { detail: t }));
-}
-
-function initThemePicker() {
-  const box = $('.theme-picker-swatches');
-  if (box) {
-    Object.entries(THEMES).forEach(([key, t]) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.dataset.themeSet = key;
-      b.style.setProperty('--sw', t.accent);
-      b.setAttribute('aria-label', t.name);
-      b.addEventListener('click', () => {
-        applyTheme(key);
-        const url = new URL(location.href);
-        url.searchParams.set('theme', key);
-        history.replaceState(null, '', url);
-      });
-      box.appendChild(b);
-    });
-  }
-  let key = new URLSearchParams(location.search).get('theme');
-  if (!THEMES[key]) {
-    try { key = localStorage.getItem('theme'); } catch (e) { key = null; }
-  }
-  applyTheme(THEMES[key] ? key : 'lime');
-}
-
-/* =========================================================
    Плавний скрол (Lenis + GSAP ScrollTrigger)
    ========================================================= */
 let lenis = null;
@@ -299,10 +246,15 @@ function initCursor() {
     cursor.classList.toggle('is-hover', !!hit);
   });
 
-  // Кільце наздоганяє точку з інерцією
-  const tick = () => {
-    ringPos.x += (pos.x - ringPos.x) * 0.16;
-    ringPos.y += (pos.y - ringPos.y) * 0.16;
+  // Кільце майже одразу йде за точкою — лише ледь помітна інерція.
+  // Швидкість не залежить від частоти кадрів (60 / 120 Гц однаково).
+  let last = performance.now();
+  const tick = (now) => {
+    const dt = Math.min((now - last) / 1000, 0.1);
+    last = now;
+    const k = 1 - Math.pow(1 - 0.45, dt * 60);
+    ringPos.x += (pos.x - ringPos.x) * k;
+    ringPos.y += (pos.y - ringPos.y) * k;
     ring.style.transform = `translate3d(${ringPos.x}px, ${ringPos.y}px, 0)`;
     requestAnimationFrame(tick);
   };
@@ -489,8 +441,9 @@ async function initHero3D() {
   }
 
   // На телефонах — менше частинок і нижча щільність пікселів
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, IS_MOBILE ? 1.5 : 2);
-  const COUNT = IS_MOBILE ? 5000 : 16000;
+  // Частинки дрібні, тож висока щільність пікселів майже не видна, а навантаження росте вчетверо
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+  const COUNT = IS_MOBILE ? 5000 : 12000;
   const DUST = IS_MOBILE ? 150 : 500;
 
   renderer.setPixelRatio(pixelRatio);
@@ -517,13 +470,13 @@ async function initHero3D() {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
 
-  const accent = getComputedStyle(html).getPropertyValue('--accent').trim() || '#c8ff00';
+  const accent = getComputedStyle(html).getPropertyValue('--accent').trim() || '#a374ff';
   const uniforms = {
     uTime: { value: 0 },
     uMouse: { value: new THREE.Vector2(0, 0) },
     uAspect: { value: 1 },
     uHover: { value: 0 },
-    uSize: { value: IS_MOBILE ? 22 : 17 },
+    uSize: { value: IS_MOBILE ? 22 : 21 },
     uPixelRatio: { value: pixelRatio },
     uScroll: { value: 0 },
     uIntro: { value: REDUCED ? 1 : 0 },
@@ -586,12 +539,6 @@ async function initHero3D() {
   new ResizeObserver(resize).observe(hero);
   resize();
 
-  // Перефарбування сфери при зміні палітри
-  window.addEventListener('themechange', (e) => {
-    uniforms.uColorA.value.set(e.detail.accent);
-    if (REDUCED) renderer.render(scene, camera);
-  });
-
   // ---- Без анімацій: один статичний кадр і все ----
   if (REDUCED) {
     tilt.rotation.set(0.25, -0.4, 0);
@@ -603,9 +550,9 @@ async function initHero3D() {
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   let hoverTarget = 0;
   hero.addEventListener('pointermove', (e) => {
-    const r = canvas.getBoundingClientRect();
-    mouse.tx = ((e.clientX - r.left) / r.width) * 2 - 1;
-    mouse.ty = -(((e.clientY - r.top) / r.height) * 2 - 1);
+    // hero починається з самого верху сторінки, тож ділимо на розмір вікна без getBoundingClientRect
+    mouse.tx = (e.clientX / hero.clientWidth) * 2 - 1;
+    mouse.ty = -(((e.clientY + window.scrollY) / hero.clientHeight) * 2 - 1);
     hoverTarget = 1;
   }, { passive: true });
   hero.addEventListener('pointerleave', () => { hoverTarget = 0; });
@@ -634,8 +581,9 @@ async function initHero3D() {
     const dt = Math.min(clock.getDelta(), 0.05);
     uniforms.uTime.value += dt;
 
-    mouse.x += (mouse.tx - mouse.x) * 0.07;
-    mouse.y += (mouse.ty - mouse.y) * 0.07;
+    const k = 1 - Math.pow(1 - 0.12, dt * 60);
+    mouse.x += (mouse.tx - mouse.x) * k;
+    mouse.y += (mouse.ty - mouse.y) * k;
     uniforms.uMouse.value.set(mouse.x, mouse.y);
     uniforms.uHover.value += (hoverTarget - uniforms.uHover.value) * 0.05;
 
@@ -665,7 +613,6 @@ async function initHero3D() {
 function init() {
   let saved = 'uk';
   try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ }
-  initThemePicker();
   applyLang(saved);
   initLangSwitch();
 
