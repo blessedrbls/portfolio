@@ -4,9 +4,85 @@
            поява тексту по літерах, 3D-сцена на Three.js
    ========================================================= */
 
-// ---------- Дані проєктів (заповнимо на етапі 3) ----------
-// eslint-disable-next-line no-unused-vars
-const PROJECTS = [];
+// ---------- Дані проєктів ----------
+// Щоб додати/змінити проєкт — редагуй цей масив.
+//   image: шлях до картинки в images/ (наприклад 'images/coffee-miniapp.webp').
+//          Порожній рядок або файл, що не завантажився → гарна SVG-заглушка.
+//   kind:  вигляд заглушки — 'site' | 'bot' | 'miniapp'
+//   motif: значок на заглушці — 'cup' | 'calendar' | 'barber' | 'play' | 'bag'
+//   demo:  посилання «Демо» (null — кнопки не буде), code: посилання «Код»
+const PROJECTS = [
+  {
+    kind: 'miniapp',
+    motif: 'cup',
+    image: '',
+    type: { uk: 'Mini App', en: 'Mini App' },
+    title: { uk: "Telegram Mini App для кав'ярні", en: 'Coffee shop Telegram Mini App' },
+    desc: {
+      uk: 'Меню, кошик і замовлення на самовивіз просто в Telegram. Бот з адмінкою, де бариста змінює статуси замовлень.',
+      en: 'Menu, cart and pickup orders right inside Telegram, plus a bot with an admin panel for order statuses.',
+    },
+    tags: ['Mini App', 'JavaScript', 'Python', 'aiogram 3'],
+    demo: 'https://t.me/coffee_miniapp_bot_bot',
+    code: 'https://github.com/blessedrbls/coffee-miniapp',
+  },
+  {
+    kind: 'bot',
+    motif: 'calendar',
+    image: '',
+    type: { uk: 'Telegram-бот', en: 'Telegram bot' },
+    title: { uk: 'Бот онлайн-запису в барбершоп', en: 'Barbershop booking bot' },
+    desc: {
+      uk: 'Запис до майстра у два дотики: вільні слоти, нагадування, відгуки та адмін-панель.',
+      en: 'Book a barber in two taps: free time slots, reminders, reviews and an admin panel.',
+    },
+    tags: ['Python', 'aiogram 3', 'SQLite', 'APScheduler'],
+    demo: 'https://t.me/barbershop_barbershop_bot_bot',
+    code: 'https://github.com/blessedrbls/telegram-booking-bot',
+  },
+  {
+    kind: 'site',
+    motif: 'barber',
+    image: '',
+    type: { uk: 'Сайт', en: 'Website' },
+    title: { uk: 'Сайт барбершопу', en: 'Barbershop website' },
+    desc: {
+      uk: 'Сайт з онлайн-записом: вільний час кожного майстра, без подвійних бронювань, заявки одразу в Telegram.',
+      en: "Website with online booking: each barber's free time, no double bookings, requests go straight to Telegram.",
+    },
+    tags: ['HTML/CSS/JS', 'Cloudflare Workers', 'D1'],
+    demo: 'https://blessedrbls.github.io/barbershop-site/',
+    code: 'https://github.com/blessedrbls/barbershop-site',
+  },
+  {
+    kind: 'site',
+    motif: 'play',
+    image: '',
+    type: { uk: 'Лендінг', en: 'Landing page' },
+    title: { uk: 'Лендінг онлайн-курсу', en: 'Online course landing page' },
+    desc: {
+      uk: 'Демо-лендінг для онлайн-курсу з Python на чистому HTML, CSS і JavaScript.',
+      en: 'Demo landing page for an online Python course, built with plain HTML, CSS and JavaScript.',
+    },
+    tags: ['HTML', 'CSS', 'JavaScript'],
+    demo: 'https://blessedrbls.github.io/landing-course/',
+    code: 'https://github.com/blessedrbls/landing-course',
+  },
+  {
+    kind: 'bot',
+    motif: 'bag',
+    image: '',
+    type: { uk: 'Telegram-бот', en: 'Telegram bot' },
+    title: { uk: 'Бот-магазин', en: 'Telegram shop bot' },
+    desc: {
+      uk: 'Магазин у Telegram: каталог, кошик, оформлення замовлення, статуси, адмін-панель і розсилки.',
+      en: 'A shop inside Telegram: catalogue, cart, checkout, order statuses, admin panel and broadcasts.',
+    },
+    tags: ['Python', 'aiogram 3', 'SQLite'],
+    demo: null,
+    code: 'https://github.com/blessedrbls/telegram-shop-bot',
+  },
+];
 
 // ---------- Переклади ----------
 const I18N = {
@@ -27,7 +103,19 @@ const I18N = {
     'hero.status': 'Відкритий до нових проєктів',
     'hero.scroll': 'Гортай',
     'services.title': 'Що я роблю',
+    'services.1.title': 'Сайти та лендінги',
+    'services.1.text': 'Швидкі адаптивні сайти й лендінги, які гарно виглядають на будь-якому екрані й перетворюють відвідувачів на заявки.',
+    'services.1.tags': 'Лендінги · Сайти-візитки · Онлайн-запис',
+    'services.2.title': 'Telegram-боти',
+    'services.2.text': 'Боти для запису, продажів і підтримки: приймають замовлення й відповідають клієнтам 24/7, поки ви займаєтесь справами.',
+    'services.2.tags': 'Запис · Магазини · Адмін-панелі',
+    'services.3.title': 'Telegram Mini Apps',
+    'services.3.text': 'Повноцінні застосунки всередині Telegram: каталог, кошик і замовлення без встановлення окремої програми.',
+    'services.3.tags': 'Меню · Кошик · Замовлення',
     'work.title': 'Роботи',
+    'work.hint': 'Гортай — проєкти їдуть убік',
+    'work.demo': 'Демо',
+    'work.code': 'Код',
     'process.title': 'Як я працюю',
     'contact.title': 'Контакти',
     'footer.top': 'Нагору ↑',
@@ -49,7 +137,19 @@ const I18N = {
     'hero.status': 'Open for new projects',
     'hero.scroll': 'Scroll',
     'services.title': 'What I do',
+    'services.1.title': 'Websites & landing pages',
+    'services.1.text': 'Fast, responsive websites and landing pages that look great on any screen and turn visitors into leads.',
+    'services.1.tags': 'Landing pages · Business sites · Online booking',
+    'services.2.title': 'Telegram bots',
+    'services.2.text': 'Bots for bookings, sales and support: they take orders and answer your clients 24/7 while you run your business.',
+    'services.2.tags': 'Booking · Shops · Admin panels',
+    'services.3.title': 'Telegram Mini Apps',
+    'services.3.text': 'Full apps inside Telegram: catalogue, cart and orders without installing anything.',
+    'services.3.tags': 'Menu · Cart · Orders',
     'work.title': 'Work',
+    'work.hint': 'Keep scrolling — projects slide sideways',
+    'work.demo': 'Demo',
+    'work.code': 'Code',
     'process.title': 'How I work',
     'contact.title': 'Contact',
     'footer.top': 'Back to top ↑',
@@ -145,7 +245,7 @@ function initLangSwitch() {
       applyLang(btn.dataset.lang);
       revealHero(true);
       initScrollFx();
-      if (HAS_GSAP) window.ScrollTrigger?.refresh();
+      refreshScroll();
     });
   });
 }
@@ -335,6 +435,7 @@ function initScrollFx() {
         scrub: 0.6,
         onUpdate: (self) => { heroScroll.p = self.progress; },
         onLeaveBack: () => { heroScroll.p = 0; },
+        refreshPriority: 1, // перший екран вище за інші закріплені секції — рахуємо його першим
       },
     });
     tl.to('.hero-title .char', {
@@ -400,6 +501,236 @@ function initScrollMotion() {
       if (Math.abs(skew - lastSkew) > 0.01) { setSkew(skew); lastSkew = skew; }
     }
   });
+}
+
+/* =========================================================
+   2. «Що я роблю»: картки з'являються по черзі, нахиляються за мишею,
+      край світиться неоном там, де курсор
+   ========================================================= */
+function initServices() {
+  const cards = $$('.service-card');
+  if (!cards.length) return;
+
+  if (!REDUCED && HAS_GSAP && window.ScrollTrigger) {
+    window.gsap.from(cards, {
+      y: 90, opacity: 0, duration: 1.1, ease: 'expo.out', stagger: 0.15,
+      scrollTrigger: { trigger: '.services-grid', start: 'top 82%', once: true },
+    });
+  }
+
+  // Підсвітка краю йде за курсором (це не рух, тож працює і в режимі «без анімацій»)
+  cards.forEach((card) => {
+    let rect = null;
+    card.addEventListener('pointerenter', () => { rect = card.getBoundingClientRect(); });
+    card.addEventListener('pointermove', (e) => {
+      if (!rect) rect = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - rect.left}px`);
+      card.style.setProperty('--my', `${e.clientY - rect.top}px`);
+    });
+    card.addEventListener('pointerleave', () => { rect = null; });
+  });
+
+  // 3D-нахил — лише для миші й коли анімації дозволені
+  if (IS_TOUCH || REDUCED || !HAS_GSAP) return;
+  const { gsap } = window;
+  cards.forEach((card) => {
+    // перспективу задає батьківська сітка (CSS perspective), тож у спокої картка — звичайний 2D-елемент
+    const rx = gsap.quickTo(card, 'rotationX', { duration: 0.5, ease: 'power3.out' });
+    const ry = gsap.quickTo(card, 'rotationY', { duration: 0.5, ease: 'power3.out' });
+    let rect = null;
+    card.addEventListener('pointerenter', () => { rect = card.getBoundingClientRect(); });
+    card.addEventListener('pointermove', (e) => {
+      if (!rect) rect = card.getBoundingClientRect();
+      const px = (e.clientX - rect.left) / rect.width - 0.5;  // -0.5..0.5
+      const py = (e.clientY - rect.top) / rect.height - 0.5;
+      ry(px * 12);
+      rx(-py * 10);
+    });
+    card.addEventListener('pointerleave', () => {
+      rect = null;
+      gsap.to(card, {
+        rotationX: 0, rotationY: 0, duration: 0.9, ease: 'power3.out', overwrite: 'auto',
+        onComplete: () => gsap.set(card, { clearProps: 'rotationX,rotationY' }), // повертаємо чіткий 2D-текст
+      });
+    });
+  });
+}
+
+/* =========================================================
+   3. «Роботи»: картки з масиву PROJECTS
+   ========================================================= */
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// Красива заглушка замість картинки: макет пристрою + значок теми проєкту
+function placeholderSVG(p, i) {
+  const id = `ph${i}`;
+  const W = (a) => `rgba(241,240,234,${a})`;
+  const frameStroke = 'rgba(255,255,255,.13)';
+
+  const phone = `
+    <rect x="150" y="22" width="150" height="256" rx="24" fill="#14121c" stroke="${frameStroke}"/>
+    <rect x="200" y="32" width="50" height="6" rx="3" fill="${W(0.12)}"/>`;
+
+  const devices = {
+    site: `
+      <rect x="56" y="46" width="294" height="208" rx="12" fill="#14121c" stroke="${frameStroke}"/>
+      <path d="M56 72h294" stroke="${W(0.08)}"/>
+      <circle cx="72" cy="59" r="4" fill="${W(0.25)}"/><circle cx="85" cy="59" r="4" fill="${W(0.25)}"/><circle cx="98" cy="59" r="4" fill="${W(0.25)}"/>
+      <rect x="140" y="54" width="140" height="10" rx="5" fill="${W(0.07)}"/>
+      <rect x="76" y="94" width="140" height="14" rx="7" fill="${W(0.9)}"/>
+      <rect x="76" y="116" width="104" height="14" rx="7" fill="${W(0.5)}"/>
+      <rect x="76" y="144" width="128" height="6" rx="3" fill="${W(0.18)}"/>
+      <rect x="76" y="156" width="96" height="6" rx="3" fill="${W(0.18)}"/>
+      <rect x="76" y="180" width="76" height="24" rx="12" fill="currentColor"/>
+      <rect x="230" y="90" width="100" height="122" rx="10" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-opacity=".35"/>
+      <rect x="76" y="222" width="254" height="16" rx="6" fill="${W(0.05)}"/>`,
+    bot: `${phone}
+      <circle cx="174" cy="60" r="11" fill="currentColor" fill-opacity=".85"/>
+      <rect x="192" y="54" width="62" height="7" rx="3.5" fill="${W(0.8)}"/>
+      <rect x="192" y="65" width="38" height="5" rx="2.5" fill="${W(0.25)}"/>
+      <path d="M150 82h150" stroke="${W(0.07)}"/>
+      <rect x="164" y="96" width="94" height="26" rx="10" fill="${W(0.1)}"/>
+      <rect x="194" y="130" width="92" height="26" rx="10" fill="currentColor" fill-opacity=".85"/>
+      <rect x="164" y="164" width="106" height="34" rx="10" fill="${W(0.1)}"/>
+      <rect x="164" y="208" width="58" height="22" rx="8" fill="none" stroke="currentColor" stroke-opacity=".7"/>
+      <rect x="228" y="208" width="58" height="22" rx="8" fill="none" stroke="currentColor" stroke-opacity=".7"/>
+      <rect x="164" y="236" width="122" height="22" rx="8" fill="none" stroke="currentColor" stroke-opacity=".7"/>`,
+    miniapp: `${phone}
+      <rect x="164" y="48" width="78" height="9" rx="4.5" fill="${W(0.85)}"/>
+      <circle cx="276" cy="52" r="8" fill="currentColor" fill-opacity=".85"/>
+      ${[[164, 70], [228, 70], [164, 148], [228, 148]].map(([x, y]) => `
+        <rect x="${x}" y="${y}" width="58" height="70" rx="10" fill="${W(0.06)}"/>
+        <circle cx="${x + 29}" cy="${y + 27}" r="14" fill="currentColor" fill-opacity=".25" stroke="currentColor" stroke-opacity=".7"/>
+        <rect x="${x + 10}" y="${y + 52}" width="30" height="6" rx="3" fill="${W(0.35)}"/>`).join('')}
+      <rect x="164" y="232" width="122" height="30" rx="15" fill="currentColor"/>`,
+  };
+
+  // Значки (центр ≈ 385,109 — у «плаваючій» картці праворуч)
+  const s = 'fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"';
+  const motifs = {
+    cup: `<path d="M365 98h34v16a14 14 0 0 1-14 14h-6a14 14 0 0 1-14-14z" ${s}/>
+          <path d="M399 102h5a7 7 0 0 1 0 14h-5" ${s}/>
+          <path d="M375 90c-3-4 3-6 0-10M386 90c-3-4 3-6 0-10" ${s} stroke-width="2.5"/>`,
+    calendar: `<rect x="362" y="86" width="46" height="44" rx="6" ${s}/>
+          <path d="M362 98h46M374 80v10M396 80v10" ${s}/>
+          ${[0, 1, 2].map((r) => [0, 1, 2, 3].map((c) => (r === 1 && c === 2
+            ? `<rect x="${387}" y="${109}" width="8" height="7" rx="2" fill="currentColor"/>`
+            : `<circle cx="${371 + c * 10}" cy="${106 + r * 8}" r="1.8" fill="${W(0.45)}"/>`)).join('')).join('')}`,
+    barber: `<clipPath id="${id}c"><rect x="378" y="88" width="14" height="42" rx="2"/></clipPath>
+          <rect x="375" y="80" width="20" height="9" rx="3" fill="${W(0.85)}"/>
+          <rect x="375" y="129" width="20" height="9" rx="3" fill="${W(0.85)}"/>
+          <g clip-path="url(#${id}c)"><rect x="378" y="88" width="14" height="42" fill="${W(0.9)}"/>
+          ${[0, 1, 2, 3, 4, 5].map((k) => `<path d="M376 ${92 + k * 8}l18 -10v5l-18 10z" fill="currentColor"/>`).join('')}</g>`,
+    play: `<circle cx="385" cy="109" r="24" ${s}/><path d="M378 97v24l20-12z" fill="currentColor"/>`,
+    bag: `<path d="M366 96h38l-3 36h-32z" ${s}/><path d="M376 96v-6a9 9 0 0 1 18 0v6" ${s}/>`,
+  };
+
+  return `
+  <svg viewBox="0 0 480 300" preserveAspectRatio="xMidYMid slice" style="color:var(--accent)" aria-hidden="true" focusable="false">
+    <defs>
+      <radialGradient id="${id}g" cx="60%" cy="45%" r="62%">
+        <stop offset="0" stop-color="currentColor" stop-opacity=".42"/>
+        <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+      </radialGradient>
+      <pattern id="${id}p" width="24" height="24" patternUnits="userSpaceOnUse">
+        <path d="M24 0H0V24" fill="none" stroke="rgba(255,255,255,.045)"/>
+      </pattern>
+    </defs>
+    <rect width="480" height="300" fill="#0b0a12"/>
+    <rect width="480" height="300" fill="url(#${id}p)"/>
+    <rect width="480" height="300" fill="url(#${id}g)"/>
+    ${devices[p.kind] || devices.site}
+    <g transform="rotate(6 385 109)">
+      <rect x="331" y="55" width="108" height="108" rx="20" fill="#17141f" stroke="currentColor" stroke-opacity=".55"/>
+      ${motifs[p.motif] || ''}
+    </g>
+  </svg>`;
+}
+
+function renderProjects() {
+  const track = $('.work-track');
+  if (!track) return;
+  // обидва переклади в картці; CSS показує потрібний (без перебудови при зміні мови)
+  const both = (o) => `<span data-l="uk">${esc(o.uk)}</span><span data-l="en">${esc(o.en)}</span>`;
+  const arrow = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  const codeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const n = (x) => String(x).padStart(2, '0');
+
+  track.innerHTML = PROJECTS.map((p, i) => `
+    <li class="project-card">
+      <div class="project-media">
+        <div class="project-media-inner">
+          ${p.image
+            ? `<img src="${esc(p.image)}" alt="" loading="lazy" decoding="async" data-ph="${i}">`
+            : placeholderSVG(p, i)}
+        </div>
+      </div>
+      <div class="project-body">
+        <div class="project-meta mono"><span class="project-type">${both(p.type)}</span><span>${n(i + 1)} / ${n(PROJECTS.length)}</span></div>
+        <h3 class="project-title">${both(p.title)}</h3>
+        <p class="project-desc">${both(p.desc)}</p>
+        <ul class="project-tags" role="list">${p.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+        <div class="project-actions">
+          ${p.demo ? `<a class="project-btn project-btn--demo" href="${esc(p.demo)}" target="_blank" rel="noopener">${both({ uk: 'Демо', en: 'Demo' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
+          ${p.code ? `<a class="project-btn project-btn--code" href="${esc(p.code)}" target="_blank" rel="noopener">${both({ uk: 'Код', en: 'Code' })}<span class="sr-only">: ${both(p.title)}</span>${codeIcon}</a>` : ''}
+        </div>
+      </div>
+    </li>`).join('');
+
+  // Картинку не знайдено → заглушка
+  $$('img[data-ph]', track).forEach((img) => {
+    img.addEventListener('error', () => {
+      const i = Number(img.dataset.ph);
+      img.outerHTML = placeholderSVG(PROJECTS[i], i);
+    }, { once: true });
+  });
+}
+
+// Десктоп: секція закріплюється, а картки їдуть уліво, поки гортаєш униз.
+// Телефон / планшет / «без анімацій»: звичайний вертикальний список (CSS за замовчуванням).
+function initWork() {
+  const section = $('.work');
+  const track = $('.work-track');
+  if (!section || !track || REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
+  const { gsap } = window;
+
+  gsap.matchMedia().add('(min-width: 900px) and (hover: hover) and (pointer: fine)', () => {
+    section.classList.add('is-horizontal');
+    const viewport = $('.work-viewport', section);
+    const bar = $('.work-progress span', section);
+    const distance = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
+
+    const tween = gsap.to(track, {
+      x: () => -distance(),
+      ease: 'none',
+      scrollTrigger: {
+        trigger: section,
+        start: 'top top',
+        end: () => `+=${distance()}`,
+        pin: true,
+        scrub: 0.6,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => gsap.set(bar, { scaleX: self.progress }),
+      },
+    });
+
+    // Паралакс картинок усередині карток під час руху стрічки
+    $$('.project-media-inner > *', track).forEach((media) => {
+      gsap.fromTo(media, { xPercent: -4 }, {
+        xPercent: 4, ease: 'none',
+        scrollTrigger: { trigger: media.closest('.project-card'), containerAnimation: tween, start: 'left right', end: 'right left', scrub: true },
+      });
+    });
+
+    return () => section.classList.remove('is-horizontal');
+  });
+}
+
+// Перерахунок позицій усіх тригерів у порядку їх розташування на сторінці
+function refreshScroll() {
+  if (!HAS_GSAP || !window.ScrollTrigger) return;
+  window.ScrollTrigger.sort();
+  window.ScrollTrigger.refresh();
 }
 
 /* =========================================================
@@ -969,6 +1300,7 @@ function initFpsMeter() {
 function init() {
   let saved = 'uk';
   try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ }
+  renderProjects();
   applyLang(saved);
   initLangSwitch();
 
@@ -984,7 +1316,9 @@ function init() {
   Promise.race([fontsReady, new Promise((r) => setTimeout(r, 1200))]).then(() => {
     revealHero();
     initScrollFx();
-    window.ScrollTrigger?.refresh();
+    initServices();
+    initWork();
+    refreshScroll();
   });
 
   initHero3D();

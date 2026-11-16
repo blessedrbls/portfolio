@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 
-  <link rel="stylesheet" href="style.css?v=21">
+  <link rel="stylesheet" href="style.css?v=24">
 
   <!-- Three.js як ES-модуль (фіксована версія) -->
   <script type="importmap">
@@ -39,7 +39,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=21"></script>
+  <script type="module" src="main.js?v=23"></script>
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">Перейти до змісту</a>
@@ -122,15 +122,78 @@
       <p class="statement-text" data-split data-i18n="statement.text">Кожен *сайт* і кожен *бот*, який я роблю, має одну мету — *приводити вам клієнтів*.</p>
     </section>
 
-    <!-- ============ Заглушки — наповнимо на наступних етапах ============ -->
-    <section class="section section--stub" id="services" aria-labelledby="services-title">
+    <!-- ============ 2. ЩО Я РОБЛЮ ============ -->
+    <section class="section services" id="services" aria-labelledby="services-title">
       <p class="section-index mono">01</p>
       <h2 class="section-title" id="services-title" data-split data-skew data-i18n="services.title">Що я роблю</h2>
+
+      <div class="services-grid">
+        <article class="service-card" data-tilt>
+          <span class="service-num mono">01</span>
+          <svg class="service-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="8" width="38" height="28" rx="4"/>
+            <path d="M5 15h38"/>
+            <circle cx="10" cy="11.5" r="0.9" fill="currentColor" stroke="none"/>
+            <circle cx="13.5" cy="11.5" r="0.9" fill="currentColor" stroke="none"/>
+            <circle cx="17" cy="11.5" r="0.9" fill="currentColor" stroke="none"/>
+            <path d="M11 22h13M11 27h8"/>
+            <rect x="28" y="20" width="10" height="10" rx="2"/>
+            <path d="M18 43h12M24 36v7"/>
+          </svg>
+          <h3 class="service-title" data-i18n="services.1.title">Сайти та лендінги</h3>
+          <p class="service-text" data-i18n="services.1.text">Швидкі адаптивні сайти й лендінги, які гарно виглядають на будь-якому екрані й перетворюють відвідувачів на заявки.</p>
+          <p class="service-tags mono" data-i18n="services.1.tags">Лендінги · Сайти-візитки · Онлайн-запис</p>
+        </article>
+
+        <article class="service-card" data-tilt>
+          <span class="service-num mono">02</span>
+          <svg class="service-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 14a5 5 0 0 1 5-5h22a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H22l-8 7v-7h-1a5 5 0 0 1-5-5z"/>
+            <circle cx="18" cy="20" r="2" fill="currentColor" stroke="none"/>
+            <circle cx="30" cy="20" r="2" fill="currentColor" stroke="none"/>
+            <path d="M19 26c2.8 2 7.2 2 10 0"/>
+            <path d="M24 9V5"/>
+            <circle cx="24" cy="3.8" r="1.3"/>
+          </svg>
+          <h3 class="service-title" data-i18n="services.2.title">Telegram-боти</h3>
+          <p class="service-text" data-i18n="services.2.text">Боти для запису, продажів і підтримки: приймають замовлення й відповідають клієнтам 24/7, поки ви займаєтесь справами.</p>
+          <p class="service-tags mono" data-i18n="services.2.tags">Запис · Магазини · Адмін-панелі</p>
+        </article>
+
+        <article class="service-card" data-tilt>
+          <span class="service-num mono">03</span>
+          <svg class="service-icon" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="13" y="4" width="22" height="40" rx="5"/>
+            <path d="M21 8h6"/>
+            <rect x="17" y="13" width="6" height="6" rx="1.5"/>
+            <rect x="25" y="13" width="6" height="6" rx="1.5"/>
+            <rect x="17" y="21" width="6" height="6" rx="1.5"/>
+            <rect x="25" y="21" width="6" height="6" rx="1.5"/>
+            <rect x="17" y="33" width="14" height="5" rx="2.5" fill="currentColor" stroke="none"/>
+          </svg>
+          <h3 class="service-title" data-i18n="services.3.title">Telegram Mini Apps</h3>
+          <p class="service-text" data-i18n="services.3.text">Повноцінні застосунки всередині Telegram: каталог, кошик і замовлення без встановлення окремої програми.</p>
+          <p class="service-tags mono" data-i18n="services.3.tags">Меню · Кошик · Замовлення</p>
+        </article>
+      </div>
     </section>
 
-    <section class="section section--stub" id="work" aria-labelledby="work-title">
-      <p class="section-index mono">02</p>
-      <h2 class="section-title" id="work-title" data-split data-skew data-i18n="work.title">Роботи</h2>
+    <!-- ============ 3. РОБОТИ (картки генеруються з масиву PROJECTS у main.js) ============ -->
+    <section class="section work" id="work" aria-labelledby="work-title">
+      <div class="work-head">
+        <div>
+          <p class="section-index mono">02</p>
+          <h2 class="section-title" id="work-title" data-split data-skew data-i18n="work.title">Роботи</h2>
+        </div>
+        <p class="work-hint mono" aria-hidden="true">
+          <span data-i18n="work.hint">Гортай — проєкти їдуть убік</span>
+          <span class="work-hint-arrow">→</span>
+        </p>
+      </div>
+      <div class="work-viewport">
+        <ul class="work-track" role="list"></ul>
+      </div>
+      <div class="work-progress" aria-hidden="true"><span></span></div>
     </section>
 
     <section class="section section--stub" id="process" aria-labelledby="process-title">
