@@ -31,6 +31,7 @@ const I18N = {
     'process.title': 'Як я працюю',
     'contact.title': 'Контакти',
     'footer.top': 'Нагору ↑',
+    'marquee.items': ['Сайти', 'Лендінги', 'Telegram-боти', 'Mini Apps', 'Інтернет-магазини'],
   },
   en: {
     'meta.title': 'Oleksii — websites & Telegram bots for business',
@@ -52,6 +53,7 @@ const I18N = {
     'process.title': 'How I work',
     'contact.title': 'Contact',
     'footer.top': 'Back to top ↑',
+    'marquee.items': ['Websites', 'Landing pages', 'Telegram bots', 'Mini Apps', 'Online stores'],
   },
 };
 
@@ -70,6 +72,10 @@ window.matchMedia('(prefers-reduced-motion: reduce)')
   .addEventListener?.('change', () => location.reload());
 
 let currentLang = 'uk';
+
+// Спільний стан скролу: прогрес «прилиплого» першого екрану (0..1) і швидкість прокрутки
+const heroScroll = { p: 0 };
+const scrollSpeed = { raw: 0, smooth: 0 };
 
 /* =========================================================
    Розбиття тексту на літери
@@ -95,9 +101,13 @@ function splitText(el, text) {
     w.className = isAccent ? 'word is-accent' : 'word';
     w.setAttribute('aria-hidden', 'true');
     for (const ch of word) {
+      // .char — для анімації виходу при скролі, .char-in — для появи (щоб вони не конфліктували)
       const c = document.createElement('span');
       c.className = 'char';
-      c.textContent = ch;
+      const inner = document.createElement('span');
+      inner.className = 'char-in';
+      inner.textContent = ch;
+      c.appendChild(inner);
       w.appendChild(c);
     }
     el.appendChild(w);
@@ -121,6 +131,7 @@ function applyLang(lang) {
     else el.textContent = value;
   });
 
+  buildMarquee(dict['marquee.items']);
   $$('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === currentLang)));
   try { localStorage.setItem('lang', currentLang); } catch (e) { /* приватний режим */ }
 }
@@ -129,8 +140,10 @@ function initLangSwitch() {
   $$('[data-lang]').forEach((btn) => {
     btn.addEventListener('click', () => {
       if (btn.dataset.lang === currentLang) return;
+      fxCtx?.revert();          // старі літери зникнуть — анімації скролу треба перебудувати
       applyLang(btn.dataset.lang);
       revealHero(true);
+      initScrollFx();
       if (HAS_GSAP) window.ScrollTrigger?.refresh();
     });
   });
@@ -146,7 +159,7 @@ function revealHero(fast = false) {
     return;
   }
   const { gsap } = window;
-  const chars = $$('.hero-title .char');
+  const chars = $$('.hero-title .char-in');
 
   gsap.set('.hero-title', { opacity: 1 });
 
@@ -176,10 +189,13 @@ function initScroll() {
   // Без анімацій або без бібліотеки — звичайний нативний скрол
   if (REDUCED || !HAS_GSAP || typeof window.Lenis === 'undefined') return;
 
+  window.ScrollTrigger.config({ ignoreMobileResize: true });
+
+  // Плавний інерційний скрол колесом/тачпадом. На телефонах — нативний (там він і так плавний).
   lenis = new window.Lenis({
-    // Колесо і тачпад — нативний скрол браузера (звична інерція, як на будь-якому сайті).
-    // Lenis лишається для плавних переходів по якорях (меню, «Гортай») і синхронізації зі ScrollTrigger.
-    smoothWheel: false,
+    lerp: 0.1,           // м'якість: менше — довше «пливе», більше — різкіше
+    wheelMultiplier: 1,
+    smoothWheel: true,
     syncTouch: false,
   });
 
@@ -296,16 +312,140 @@ function initMagnetic() {
 }
 
 /* =========================================================
-   Паралакс головного екрану при скролі
+   Ефекти скролу
    ========================================================= */
-function initHeroScroll() {
+let fxCtx = null;
+
+// Перебудовується при зміні мови (бо літери заголовків створюються заново)
+function initScrollFx() {
   if (REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
-  window.gsap.to('.hero-content', {
-    yPercent: -18,
-    opacity: 0.15,
-    ease: 'none',
-    scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
+  const { gsap } = window;
+  fxCtx?.revert();
+  fxCtx = gsap.context(() => {
+    // 1) Перший екран «прилипає» на висоту ще одного екрана:
+    //    літери по черзі виїжджають вгору, решта зникає, а сфера (у 3D) виходить у центр і вибухає
+    const tl = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        trigger: '.hero',
+        start: 'top top',
+        end: '+=110%',
+        pin: true,
+        scrub: 0.6,
+        onUpdate: (self) => { heroScroll.p = self.progress; },
+        onLeaveBack: () => { heroScroll.p = 0; },
+      },
+    });
+    tl.to('.hero-title .char', {
+      y: '-1.3em', rotate: -8, opacity: 0, ease: 'power2.in', duration: 0.4, stagger: { each: 0.008, from: 'start' },
+    }, 0)
+      // дочірні елементи, а не самі .hero-reveal — їх уже анімує поява, і анімації конфліктували б
+      .to(['.hero-top > *', '.hero-bottom', '.hero-meta > *'], { autoAlpha: 0, y: -50, duration: 0.25, stagger: 0.03 }, 0.02)
+      .to('.hero-glow', { opacity: 0, duration: 0.6 }, 0.3)
+      .to({}, { duration: 0.4 }); // «запас» — поки сфера розлітається вибухом
+
+    // 2) Заголовки розділів з'являються по літерах
+    $$('.section-title').forEach((title) => {
+      const chars = $$('.char-in', title);
+      if (!chars.length) return;
+      gsap.from(chars, {
+        yPercent: 115, rotate: 8, duration: 1.1, ease: 'expo.out', stagger: 0.025,
+        scrollTrigger: { trigger: title, start: 'top 88%', once: true },
+      });
+      const index = title.previousElementSibling;
+      if (index) {
+        gsap.from(index, {
+          opacity: 0, x: -20, duration: 0.8, ease: 'power3.out',
+          scrollTrigger: { trigger: title, start: 'top 88%', once: true },
+        });
+      }
+    });
   });
+}
+
+// Швидкість прокрутки, прогрес-смужка, нахил при швидкому скролі
+function initScrollMotion() {
+  if (REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
+  const { gsap } = window;
+
+  window.ScrollTrigger.create({
+    start: 0, end: 'max',
+    onUpdate: (self) => { scrollSpeed.raw = self.getVelocity(); },
+  });
+
+  gsap.to('.scroll-progress', {
+    scaleX: 1, ease: 'none',
+    scrollTrigger: { start: 0, end: 'max', scrub: 0.3 },
+  });
+
+  const skewTargets = $$('[data-skew]');
+  const setSkew = skewTargets.length ? gsap.quickSetter(skewTargets, 'skewY', 'deg') : null;
+  let lastSkew = 0;
+  gsap.ticker.add(() => {
+    scrollSpeed.raw *= 0.9; // коли скрол зупинився — швидкість плавно згасає
+    scrollSpeed.smooth += (scrollSpeed.raw - scrollSpeed.smooth) * 0.12;
+    if (setSkew) {
+      const skew = gsap.utils.clamp(-6, 6, scrollSpeed.smooth * -0.0035);
+      if (Math.abs(skew - lastSkew) > 0.01) { setSkew(skew); lastSkew = skew; }
+    }
+  });
+}
+
+/* =========================================================
+   Бігучий рядок: прискорюється від швидкості скролу
+   і змінює напрям разом із ним
+   ========================================================= */
+const marqueeRows = [];
+
+function buildMarquee(items) {
+  if (!Array.isArray(items)) return;
+  $$('.marquee-track').forEach((track) => {
+    const chunk = () => {
+      const c = document.createElement('div');
+      c.className = 'marquee-chunk';
+      items.forEach((item) => {
+        const t = document.createElement('span');
+        t.textContent = item;
+        const sep = document.createElement('span');
+        sep.className = 'marquee-sep';
+        sep.textContent = '✦';
+        c.append(t, sep);
+      });
+      return c;
+    };
+    track.replaceChildren(chunk(), chunk()); // дві копії → безшовне повторення
+  });
+  marqueeRows.forEach((r) => { r.x = 0; r.width = 0; });
+}
+
+function initMarquee() {
+  const rows = $$('.marquee-row');
+  if (!rows.length || REDUCED || !HAS_GSAP) return;
+  const { gsap } = window;
+  rows.forEach((row, i) => {
+    marqueeRows.push({ track: $('.marquee-track', row), x: 0, width: 0, dir: i % 2 ? 1 : -1 });
+  });
+
+  let visible = false;
+  new IntersectionObserver(([e]) => { visible = e.isIntersecting; }).observe($('.marquee'));
+
+  let direction = 1;
+  gsap.ticker.add((time, deltaMs) => {
+    if (!visible) return;
+    const dt = Math.min(deltaMs, 50) / 1000;
+    const v = scrollSpeed.smooth;
+    if (Math.abs(v) > 30) direction = v > 0 ? 1 : -1;
+    const speed = 70 + Math.min(Math.abs(v) * 0.35, 1600); // px/с
+    marqueeRows.forEach((r) => {
+      if (!r.width) r.width = r.track.scrollWidth / 2;
+      if (!r.width) return;
+      r.x += r.dir * direction * speed * dt;
+      if (r.x <= -r.width) r.x += r.width;
+      if (r.x > 0) r.x -= r.width;
+      r.track.style.transform = `translate3d(${r.x}px, 0, 0)`;
+    });
+  });
+  window.addEventListener('resize', () => marqueeRows.forEach((r) => { r.width = 0; }));
 }
 
 /* =========================================================
@@ -368,6 +508,8 @@ const VERTEX = /* glsl */`
   uniform float uPixelRatio;
   uniform float uScroll;     // 0..1 — прогрес скролу першого екрану
   uniform float uIntro;      // 0..1 — анімація появи
+  uniform float uExplode;    // 0..1 — «вибух» сфери при скролі
+  uniform float uExplodeAmp; // сила вибуху (у легкому режимі менша)
   attribute float aRandom;
   varying float vGlow;
   varying float vAlpha;
@@ -384,6 +526,11 @@ const VERTEX = /* glsl */`
     float radius = (1.0 + disp) * (1.0 + aRandom * 0.07) * mix(0.35, 1.0, uIntro) * (1.0 + uScroll * 0.35);
     vec3 pos = n * radius;
 
+    // Вибух: кожна точка летить назовні зі своєю швидкістю й трохи закручується
+    float e = uExplode * uExplode;
+    pos += n * e * (0.8 + aRandom * 3.4) * uExplodeAmp;
+    pos += vec3(-n.z, 0.0, n.x) * e * (aRandom - 0.5) * 2.4 * uExplodeAmp;
+
     // Перша проєкція — дізнаємось, де точка на екрані
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
     vec4 clip = projectionMatrix * mv;
@@ -396,10 +543,10 @@ const VERTEX = /* glsl */`
     mv = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mv;
 
-    gl_PointSize = uSize * uPixelRatio * (0.55 + aRandom * 0.9) * (1.0 + m * 1.6) / -mv.z;
+    gl_PointSize = uSize * uPixelRatio * (0.55 + aRandom * 0.9) * (1.0 + m * 1.6) * (1.0 + e * 0.9) / -mv.z;
 
-    vGlow  = clamp(disp * 2.6 + m * 1.6, 0.0, 1.0);
-    vAlpha = mix(0.18, 1.0, smoothstep(7.4, 5.0, -mv.z)) * uIntro;
+    vGlow  = clamp(disp * 2.6 + m * 1.6 + e * 0.9, 0.0, 1.0);
+    vAlpha = mix(0.18, 1.0, smoothstep(7.4, 5.0, -mv.z)) * uIntro * (1.0 - smoothstep(0.55, 1.0, uExplode));
   }
 `;
 
@@ -510,6 +657,8 @@ async function initHero3D() {
     uSize: { value: 0 }, // задається в applyQuality
     uPixelRatio: { value: QUALITY[level].pr },
     uScroll: { value: 0 },
+    uExplode: { value: 0 },
+    uExplodeAmp: { value: 1 },
     uIntro: { value: STATIC ? 1 : 0 },
     uColorA: { value: new THREE.Color(accent) },
     uColorB: { value: new THREE.Color('#a4a4b2') },
@@ -548,6 +697,7 @@ async function initHero3D() {
   // ---- Розмір і композиція ----
   // view — прямокутник (у пікселях hero), який реально малює полотно
   const view = { x: 0, y: 0, w: 1, h: 1, W: 1, H: 1 };
+  const layout = { x: 0, y: 0, s: 1 }; // базова позиція сфери (до ефектів скролу)
   const resize = () => {
     const W = hero.clientWidth;
     const H = hero.clientHeight;
@@ -564,6 +714,8 @@ async function initHero3D() {
       root.position.set(0, halfH * 0.22, 0);
       root.scale.setScalar(Math.min(halfW * 0.92, 1.1));
     }
+
+    Object.assign(layout, { x: root.position.x, y: root.position.y, s: root.scale.x });
 
     let x = 0, y = 0, w = W, h = H;
     if (QUALITY[level].crop) {
@@ -598,6 +750,7 @@ async function initHero3D() {
     uniforms.uSize.value = (IS_MOBILE ? 22 : 21) * (q.size || 1);
     geometry.setDrawRange(0, Math.floor(COUNT * q.frac));
     dust.visible = !q.crop;                  // пил по всьому екрану в обрізаному полотні не вміщається
+    uniforms.uExplodeAmp.value = q.crop ? 0.3 : 1; // в обрізаному полотні вибух має вміститися
     html.classList.toggle('lite', q.crop);   // зерно → нерухомий фон
     resize();
     window.__heroQuality = level;
@@ -653,12 +806,6 @@ async function initHero3D() {
   // ---- Анімація появи і зв'язок зі скролом ----
   if (HAS_GSAP) {
     window.gsap.to(uniforms.uIntro, { value: 1, duration: 2.6, ease: 'expo.out', delay: 0.1 });
-    if (window.ScrollTrigger) {
-      window.gsap.to(uniforms.uScroll, {
-        value: 1, ease: 'none',
-        scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true },
-      });
-    }
   } else {
     uniforms.uIntro.value = 1;
   }
@@ -739,7 +886,19 @@ async function initHero3D() {
     uniforms.uMouse.value.set(((px - view.x) / view.w) * 2 - 1, -(((py - view.y) / view.h) * 2 - 1));
     uniforms.uHover.value += (hoverTarget - uniforms.uHover.value) * 0.05;
 
-    sphere.rotation.y += dt * 0.07;
+    // Скрол першого екрану: сфера виходить у центр, росте, потім вибухає
+    const p = heroScroll.p;
+    const move = THREE.MathUtils.smootherstep(p, 0, 0.6);
+    const crop = QUALITY[level].crop;
+    uniforms.uScroll.value = move * (crop ? 0.4 : 1);
+    uniforms.uExplode.value = THREE.MathUtils.smoothstep(p, 0.35, 1);
+    if (!crop) {
+      root.position.x = layout.x * (1 - move);
+      root.position.y = layout.y * (1 - move);
+      root.scale.setScalar(layout.s * (1 + move * 0.3));
+    }
+
+    sphere.rotation.y += dt * (0.07 + move * 0.5); // при скролі сфера розкручується
     tilt.rotation.x += (-mouse.y * 0.35 - tilt.rotation.x) * 0.05;
     tilt.rotation.y += (mouse.x * 0.5 - tilt.rotation.y) * 0.05;
     dust.rotation.y += dt * 0.012;
@@ -859,6 +1018,8 @@ function init() {
   initLangSwitch();
 
   initScroll();
+  initScrollMotion();
+  initMarquee();
   initHeader();
   initAnchors();
   initCursor();
@@ -868,7 +1029,8 @@ function init() {
   const fontsReady = document.fonts?.ready ?? Promise.resolve();
   Promise.race([fontsReady, new Promise((r) => setTimeout(r, 1200))]).then(() => {
     revealHero();
-    initHeroScroll();
+    initScrollFx();
+    window.ScrollTrigger?.refresh();
   });
 
   initHero3D();

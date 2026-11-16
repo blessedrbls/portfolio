@@ -27,7 +27,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
 
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=15">
 
   <!-- Three.js як ES-модуль (фіксована версія) -->
   <script type="importmap">
@@ -39,7 +39,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="main.js?v=12"></script>
+  <script type="module" src="main.js?v=16"></script>
 </head>
 <body>
   <a class="skip-link" href="#main" data-i18n="skip">Перейти до змісту</a>
@@ -49,6 +49,9 @@
     <div class="cursor-ring"><span></span></div>
     <div class="cursor-dot"></div>
   </div>
+
+  <!-- Прогрес прокрутки -->
+  <div class="scroll-progress" aria-hidden="true"></div>
 
   <!-- Зерно / шум поверх усього -->
   <div class="grain" aria-hidden="true"></div>
@@ -114,25 +117,31 @@
       </div>
     </section>
 
+    <!-- ============ Бігучий рядок (прискорюється від скролу) ============ -->
+    <section class="marquee" aria-hidden="true">
+      <div class="marquee-row" data-skew><div class="marquee-track"></div></div>
+      <div class="marquee-row marquee-row--outline" data-skew><div class="marquee-track"></div></div>
+    </section>
+
     <!-- ============ Заглушки — наповнимо на наступних етапах ============ -->
     <section class="section section--stub" id="services" aria-labelledby="services-title">
       <p class="section-index mono">01</p>
-      <h2 class="section-title" id="services-title" data-i18n="services.title">Що я роблю</h2>
+      <h2 class="section-title" id="services-title" data-split data-skew data-i18n="services.title">Що я роблю</h2>
     </section>
 
     <section class="section section--stub" id="work" aria-labelledby="work-title">
       <p class="section-index mono">02</p>
-      <h2 class="section-title" id="work-title" data-i18n="work.title">Роботи</h2>
+      <h2 class="section-title" id="work-title" data-split data-skew data-i18n="work.title">Роботи</h2>
     </section>
 
     <section class="section section--stub" id="process" aria-labelledby="process-title">
       <p class="section-index mono">03</p>
-      <h2 class="section-title" id="process-title" data-i18n="process.title">Як я працюю</h2>
+      <h2 class="section-title" id="process-title" data-split data-skew data-i18n="process.title">Як я працюю</h2>
     </section>
 
     <section class="section section--stub" id="contact" aria-labelledby="contact-title">
       <p class="section-index mono">04</p>
-      <h2 class="section-title" id="contact-title" data-i18n="contact.title">Контакти</h2>
+      <h2 class="section-title" id="contact-title" data-split data-skew data-i18n="contact.title">Контакти</h2>
     </section>
   </main>
 

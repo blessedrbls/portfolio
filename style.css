@@ -383,7 +383,8 @@ html.lenis, html.lenis body { height: auto; }
 
 /* Розбиття тексту на літери */
 [data-split] .word { display: inline-block; white-space: nowrap; }
-[data-split] .char { display: inline-block; }
+[data-split] .char,
+[data-split] .char-in { display: inline-block; }
 
 /* Стартовий стан для анімації (лише коли JS + анімації дозволені) */
 .js:not(.reduced) .hero-title,
@@ -397,6 +398,73 @@ html.lenis, html.lenis body { height: auto; }
   .hero-title { font-size: clamp(1.9rem, 9.2vw, 3.4rem); }
   .scroll-hint { display: none; }
 }
+
+/* ---------- Прогрес прокрутки ---------- */
+.scroll-progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 160;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+.reduced .scroll-progress, .no-js .scroll-progress { display: none; }
+
+/* ---------- Бігучий рядок ---------- */
+.marquee {
+  position: relative;
+  padding: clamp(3rem, 9vh, 6.5rem) 0;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+/* Коли перший екран «прилипає», рядок наїжджає на частинки, що розлітаються —
+   без порожнього екрана між ними. Без анімацій (reduced) — звичайний відступ. */
+.js:not(.reduced) .marquee {
+  margin-top: -55vh;
+  margin-top: -55svh;
+  z-index: 2;
+  border-top: 0;
+}
+.hero { z-index: 1; }
+.marquee-row { overflow: hidden; white-space: nowrap; }
+.marquee-row + .marquee-row { margin-top: 0.1em; }
+.marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+}
+.marquee-chunk {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  padding-right: 0.35em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.8rem, 9.5vw, 10rem);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+.marquee-row--outline .marquee-chunk {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(241, 240, 234, 0.45);
+}
+.marquee-sep {
+  color: var(--accent);
+  font-size: 0.45em;
+  -webkit-text-stroke: 0;
+}
+
+/* Заголовки розділів: кожне слово обрізає свої літери під час появи */
+.section-title .word {
+  overflow: clip;
+  padding-block: 0.12em 0.06em;
+  margin-block: -0.12em -0.06em;
+  vertical-align: top;
+}
+[data-skew] { will-change: transform; }
 
 /* ---------- Секції-заглушки (наступні етапи) ---------- */
 .section {
