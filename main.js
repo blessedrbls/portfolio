@@ -1,7 +1,7 @@
 /* =========================================================
    Oleksii — portfolio · main.js
-   Етап 1: мова, плавний скрол (Lenis), курсор, магнітні кнопки,
-           поява тексту по літерах, 3D-сцена на Three.js
+   Мова, прелоадер, плавний скрол (Lenis), курсор, магнітні кнопки,
+           3D-сцена (Three.js), «Що я роблю», «Роботи», «Як я працюю», «Контакти»
    ========================================================= */
 
 // ---------- Дані проєктів ----------
@@ -120,7 +120,18 @@ const I18N = {
     'work.demo': 'Демо',
     'work.code': 'Код',
     'process.title': 'Як я працюю',
-    'contact.title': 'Контакти',
+    'process.1.title': 'Обговорюємо задачу',
+    'process.1.text': 'Коротко созвонюємось або пишемо в Telegram: цілі, аудиторія, приклади, бюджет і терміни.',
+    'process.2.title': 'Показую дизайн і демо',
+    'process.2.text': 'Збираю дизайн і робочий прототип, щоб ви побачили результат ще до основної розробки.',
+    'process.3.title': 'Розробка і правки',
+    'process.3.text': 'Роблю сайт або бота, показую проміжні версії й вношу правки, поки все не буде так, як треба.',
+    'process.4.title': 'Запуск і підтримка',
+    'process.4.text': "Публікую проєкт, допомагаю з доменом і хостингом, показую, як усім користуватися, і лишаюсь на зв'язку.",
+    'contact.label': 'Контакти',
+    'contact.cta': 'Давайте зробимо *щось круте*',
+    'contact.lead': 'Напишіть мені — обговоримо ваш проєкт і я підкажу, з чого почати.',
+    'footer.name': 'Олексій',
     'footer.top': 'Нагору ↑',
     'statement.text': 'Кожен *сайт* і кожен *бот*, який я роблю, має одну мету — *приводити вам клієнтів*.',
   },
@@ -157,7 +168,18 @@ const I18N = {
     'work.demo': 'Demo',
     'work.code': 'Code',
     'process.title': 'How I work',
-    'contact.title': 'Contact',
+    'process.1.title': 'We discuss the task',
+    'process.1.text': 'A quick call or a Telegram chat: goals, audience, examples, budget and timeline.',
+    'process.2.title': 'I show the design & demo',
+    'process.2.text': 'I put together the design and a working prototype so you can see the result before the main development.',
+    'process.3.title': 'Development & edits',
+    'process.3.text': 'I build the site or bot, share work-in-progress versions and make edits until everything is right.',
+    'process.4.title': 'Launch & support',
+    'process.4.text': 'I publish the project, help with the domain and hosting, show you how to use everything and stay in touch.',
+    'contact.label': 'Contact',
+    'contact.cta': "Let's make *something cool*",
+    'contact.lead': "Message me — we'll talk about your project and I'll suggest where to start.",
+    'footer.name': 'Oleksii',
     'footer.top': 'Back to top ↑',
     'statement.text': 'Every *website* and every *bot* I build has one job: *bring you clients*.',
   },
@@ -250,12 +272,21 @@ function applyLang(lang) {
 function initLangSwitch() {
   $$('[data-lang]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      if (btn.dataset.lang === currentLang) return;
-      fxCtx?.revert();          // старі літери зникнуть — анімації скролу треба перебудувати
-      applyLang(btn.dataset.lang);
-      revealHero(true);
-      initScrollFx();
-      refreshScroll();
+      if (btn.dataset.lang === currentLang || html.classList.contains('lang-fade')) return;
+      const swap = () => {
+        fxCtx?.revert();          // старі літери зникнуть — анімації скролу треба перебудувати
+        applyLang(btn.dataset.lang);
+        revealHero(true);
+        initScrollFx();
+        refreshScroll();
+      };
+      if (REDUCED) { swap(); return; }
+      // Плавно: текст гасне → міняємо мову → текст з'являється
+      html.classList.add('lang-fade');
+      setTimeout(() => {
+        swap();
+        requestAnimationFrame(() => html.classList.remove('lang-fade'));
+      }, 260);
     });
   });
 }
@@ -482,6 +513,44 @@ function initScrollFx() {
         });
       }
     });
+
+    // 4) «Як я працюю»: лінія малюється зверху вниз разом зі скролом,
+    //    крок «загоряється», щойно лінія до нього доходить
+    const body = $('.process-body');
+    const fill = $('.process-line-fill');
+    const tip = $('.process-tip');
+    if (body && fill) {
+      const line = $('.process-line');
+      gsap.fromTo(fill, { strokeDashoffset: 1 }, {
+        strokeDashoffset: 0, ease: 'none',
+        autoRound: false, // значення від 1 до 0 — без округлення до цілих пікселів (інакше 0.28 → 0)
+        scrollTrigger: {
+          trigger: line, start: 'top 60%', end: 'bottom 60%', scrub: 0.4,
+          onUpdate: (self) => {
+            if (!tip) return;
+            gsap.set(tip, { y: self.progress * line.getBoundingClientRect().height, opacity: self.progress > 0.001 && self.progress < 0.999 ? 1 : 0 });
+          },
+        },
+      });
+      $$('.process-step', body).forEach((step) => {
+        const dot = $('.process-dot', step);
+        window.ScrollTrigger.create({
+          // та сама «лінія 60 % висоти екрана», що й для малювання лінії
+          trigger: dot, start: 'center 60%',
+          onEnter: () => step.classList.add('is-active'),
+          onLeaveBack: () => step.classList.remove('is-active'),
+        });
+      });
+    }
+
+    // 5) Великий заклик у «Контактах»: літери піднімаються одна за одною, поки гортаєш
+    const ctaChars = $$('.contact-title .char-in');
+    if (ctaChars.length) {
+      gsap.fromTo(ctaChars, { yPercent: 115, rotate: 10 }, {
+        yPercent: 0, rotate: 0, ease: 'power3.out', stagger: 0.03,
+        scrollTrigger: { trigger: '.contact-title', start: 'top 90%', end: 'top 40%', scrub: 0.6 },
+      });
+    }
   });
 }
 
@@ -948,18 +1017,16 @@ async function initHero3D() {
 
   // Назва відеокарти. Якщо вона програмна (немає драйвера / вимкнене апаратне прискорення),
   // усю графіку рахує процесор — тоді одразу стартуємо з легкого, але живого режиму.
+  let gpuName = '';
   try {
     const gl = renderer.getContext();
     const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    window.__gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-  } catch (e) { window.__gpu = 'unknown'; }
-  const params = new URLSearchParams(location.search);
-  const SOFTWARE_GPU = /swiftshader|basic render|llvmpipe|softpipe|software/i.test(window.__gpu || '')
-    || params.has('softgpu'); // ?softgpu — перевірити цей режим на нормальній відеокарті
+    gpuName = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  } catch (e) { /* назва недоступна — вважаємо відеокарту звичайною */ }
+  const SOFTWARE_GPU = /swiftshader|basic render|llvmpipe|softpipe|software/i.test(gpuName || '');
   const STATIC = REDUCED;
 
   let level = SOFTWARE_GPU ? 2 : (IS_MOBILE ? 1 : 0);
-  if (params.has('q')) level = Math.max(0, Math.min(QUALITY.length - 1, Number(params.get('q')) || 0)); // ?q=2 — для тестів
   renderer.setPixelRatio(QUALITY[level].pr);
 
   const scene = new THREE.Scene();
@@ -1099,34 +1166,7 @@ async function initHero3D() {
   };
   applyQuality();
 
-  window.__heroDebug = { uniforms, view, mouse: () => mouse }; // для перевірки в консолі
-
-  // Для тестів продуктивності: середній час одного кадру (мс) з очікуванням відеокарти.
-  // opts: { pr, frac, w, h } — тимчасово змінити параметри для заміру.
-  window.__bench3d = (opts = {}, frames = 30) => {
-    const gl = renderer.getContext();
-    const px = new Uint8Array(4);
-    const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); // чекає кінця малювання
-    const prevLevel = level;
-    if (opts.level != null) { level = opts.level; applyQuality(); }
-    const q = QUALITY[level];
-    renderer.setPixelRatio(opts.pr ?? q.pr);
-    geometry.setDrawRange(0, Math.floor(COUNT * (opts.frac ?? q.frac)));
-    if (opts.w) renderer.setSize(opts.w, opts.h, false);
-    renderer.render(scene, camera); sync();
-    const t0 = performance.now();
-    for (let i = 0; i < frames; i++) {
-      uniforms.uTime.value += 0.016;
-      renderer.render(scene, camera);
-      sync();
-    }
-    const ms = (performance.now() - t0) / frames;
-    level = prevLevel;
-    applyQuality();
-    return Math.round(ms * 100) / 100;
-  };
-
-  // ---- Без анімацій або програмна відеокарта: один статичний кадр і все ----
+  // ---- Без анімацій: один статичний кадр і все ----
   if (STATIC) {
     window.__heroQuality = 'static';
     tilt.rotation.set(0.25, -0.4, 0);
@@ -1147,7 +1187,8 @@ async function initHero3D() {
 
   // ---- Анімація появи і зв'язок зі скролом ----
   if (HAS_GSAP) {
-    window.gsap.to(uniforms.uIntro, { value: 1, duration: 2.6, ease: 'expo.out', delay: 0.1 });
+    // сфера «збирається», коли прелоадер піднімається
+    pageReady.then(() => window.gsap.to(uniforms.uIntro, { value: 1, duration: 2.6, ease: 'expo.out', delay: 0.1 }));
   } else {
     uniforms.uIntro.value = 1;
   }
@@ -1249,16 +1290,8 @@ async function initHero3D() {
     renderer.render(scene, camera);
   };
 
-  // Для лічильника FPS: можна вимкнути 3D, щоб побачити, скільки воно «з'їдає»
-  let disabled = false;
-  window.__hero3dToggle = (on) => {
-    disabled = !on;
-    canvas.style.visibility = on ? '' : 'hidden';
-    update();
-  };
-
   const update = () => {
-    const shouldRun = inView && !document.hidden && !disabled;
+    const shouldRun = inView && !document.hidden;
     if (shouldRun && !running) { running = true; winStart = 0; clock.getDelta(); frame(); }
     else if (!shouldRun) running = false;
   };
@@ -1303,55 +1336,6 @@ function initGrain() {
 }
 
 /* =========================================================
-   Лічильник FPS для перевірки: додай ?fps до адреси
-   ========================================================= */
-function initFpsMeter() {
-  const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;top:5rem;left:1rem;z-index:400;display:flex;flex-direction:column;gap:.4rem;padding:.6rem .7rem;border-radius:10px;background:#000d;color:#fff;font:12px/1.4 ui-monospace,monospace';
-  const info = document.createElement('div');
-  const gpu = document.createElement('div');
-  gpu.style.cssText = 'opacity:.7;max-width:22rem';
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:.35rem';
-  box.append(info, gpu, row);
-  setTimeout(() => { gpu.textContent = `GPU: ${window.__gpu || '—'}`; }, 1500);
-  document.body.appendChild(box);
-
-  // Кнопки: вимкнути/увімкнути окремі ефекти й подивитись, як зміниться FPS
-  const toggles = [
-    ['3D', (on) => window.__hero3dToggle?.(on)],
-    ['Grain', (on) => { $('.grain').style.display = on ? '' : 'none'; }],
-    ['Cursor', (on) => { html.classList.toggle('has-cursor', on); }],
-  ];
-  toggles.forEach(([name, fn]) => {
-    const b = document.createElement('button');
-    let on = true;
-    const paint = () => {
-      b.textContent = `${name}: ${on ? 'on' : 'off'}`;
-      b.style.cssText = `padding:.25rem .5rem;border-radius:6px;font:inherit;cursor:pointer;color:${on ? '#000' : '#fff'};background:${on ? '#a374ff' : '#333'}`;
-    };
-    b.addEventListener('click', () => { on = !on; fn(on); paint(); });
-    paint();
-    row.appendChild(b);
-  });
-
-  let frames = 0;
-  let start = performance.now();
-  const loop = (now) => {
-    frames++;
-    if (now - start >= 500) {
-      const fps = Math.round((frames * 1000) / (now - start));
-      const q = window.__heroQuality ?? '–';
-      info.textContent = `${fps} FPS · quality ${q} · ${innerWidth}×${innerHeight} @${devicePixelRatio}x`;
-      frames = 0;
-      start = now;
-    }
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
-}
-
-/* =========================================================
    Старт
    ========================================================= */
 function init() {
@@ -1368,19 +1352,62 @@ function init() {
   initCursor();
   initMagnetic();
 
-  // Чекаємо шрифти, щоб літери не «стрибали» під час анімації
-  const fontsReady = document.fonts?.ready ?? Promise.resolve();
-  Promise.race([fontsReady, new Promise((r) => setTimeout(r, 1200))]).then(() => {
+  // Прелоадер ховається, щойно завантажились шрифти (максимум ~1.5 с),
+  // і тоді ж стартує поява першого екрана
+  runPreloader().then(() => {
     revealHero();
     initScrollFx();
     initServices();
     initWork();
     refreshScroll();
+    // Посилання з якорем (наприклад …/portfolio/#contact) — одразу до потрібного блоку
+    const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+    if (target) {
+      if (lenis) lenis.scrollTo(target, { immediate: true });
+      else target.scrollIntoView();
+    }
   });
 
   initHero3D();
   initGrain();
-  if (new URLSearchParams(location.search).has('fps')) initFpsMeter();
+}
+
+/* =========================================================
+   Прелоадер: відсотки 0 → 100 і смужка, потім шторка їде вгору.
+   Загалом не довше ~1.5 с. Без анімацій — його немає зовсім.
+   ========================================================= */
+let resolvePageReady;
+const pageReady = new Promise((r) => { resolvePageReady = r; });
+
+function runPreloader() {
+  const el = $('.preloader');
+  const fontsReady = document.fonts?.ready ?? Promise.resolve();
+  const fontsOrTimeout = Promise.race([fontsReady, new Promise((r) => setTimeout(r, 1000))]);
+
+  if (!el || REDUCED || !HAS_GSAP) {
+    el?.remove();
+    return fontsOrTimeout.then(() => resolvePageReady());
+  }
+
+  const { gsap } = window;
+  const num = $('.preloader-num', el);
+  const bar = $('.preloader-bar span', el);
+  const counter = { v: 0 };
+
+  return new Promise((resolve) => {
+    // Лічильник іде до 90 %, поки чекаємо шрифти, і добігає до 100 %, коли вони готові
+    const draw = () => { num.textContent = Math.round(counter.v); bar.style.transform = `scaleX(${counter.v / 100})`; };
+    const toNinety = gsap.to(counter, { v: 90, duration: 0.8, ease: 'power2.out', onUpdate: draw });
+    fontsOrTimeout.then(() => {
+      toNinety.kill();
+      gsap.to(counter, { v: 100, duration: 0.2, ease: 'power1.out', onUpdate: draw });
+      gsap.to(el, { yPercent: -100, duration: 0.6, ease: 'expo.inOut', delay: 0.25, onComplete: () => el.remove() });
+      // Сайт запускаємо звичайним таймером, а не з анімації: навіть якщо анімації
+      // на мить зупиняться (вкладка у фоні), ефекти скролу все одно підключаться
+      setTimeout(() => { resolvePageReady(); resolve(); }, 250);
+      setTimeout(() => el.remove(), 2500); // страховка: шторка не може «зависнути»
+    });
+  });
 }
 
 init();
