@@ -462,6 +462,10 @@ let fxCtx = null;
 function initScrollFx() {
   if (REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
   const { gsap } = window;
+  // Анімації точно працюють → вмикаємо стилі, що залежать від них
+  // (приглушені кроки, «ледь помітні» слова фрази, наїзд фрази на «прилиплий» перший екран).
+  // Без цього класу все стоїть звичайним потоком і повністю видно.
+  html.classList.add('fx');
   fxCtx?.revert();
   fxCtx = gsap.context(() => {
     // 1) Перший екран «прилипає» на висоту ще одного екрана:
@@ -480,7 +484,8 @@ function initScrollFx() {
       },
     });
     tl.to('.hero-title .char', {
-      y: '-1.3em', rotate: -8, opacity: 0, ease: 'power2.in', duration: 0.4, stagger: { each: 0.008, from: 'start' },
+      // швидко: заголовок зникає в першій третині «прилипання», задовго до того, як під'їде фраза
+      y: '-1.3em', rotate: -8, opacity: 0, ease: 'power2.in', duration: 0.3, stagger: { each: 0.005, from: 'start' },
     }, 0)
       // дочірні елементи, а не самі .hero-reveal — їх уже анімує поява, і анімації конфліктували б
       .to(['.hero-top > *', '.hero-bottom', '.hero-meta > *'], { autoAlpha: 0, y: -50, duration: 0.25, stagger: 0.03 }, 0.02)

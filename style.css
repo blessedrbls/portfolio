@@ -427,11 +427,16 @@ html.lenis, html.lenis body { height: auto; }
   padding: clamp(4rem, 14vh, 9rem) var(--gutter);
   border-top: 1px solid var(--line);
 }
-/* Коли перший екран «прилипає», фраза наїжджає на частинки, що розлітаються —
-   без порожнього екрана між ними. Без анімацій (reduced) — звичайний відступ. */
-.js:not(.reduced) .statement {
-  margin-top: -45vh;
-  margin-top: -45svh;
+/* Клас .fx на <html> ставить JS ЛИШЕ тоді, коли GSAP + ScrollTrigger реально завантажились
+   і анімації запущені. Без нього (CDN недоступний, «без анімацій», без JS) усе стоїть
+   звичайним потоком і повністю видно.
+
+   З анімаціями перший екран «прилипає» ще на 110% висоти, тож фраза може трохи
+   заїхати в цей запас (на частинки, що розлітаються) — але не на сам перший екран:
+   на цей момент заголовок і кнопка вже зникли. */
+.fx .statement {
+  margin-top: -30vh;
+  margin-top: -30svh;
   z-index: 2;
   border-top: 0;
 }
@@ -446,8 +451,8 @@ html.lenis, html.lenis body { height: auto; }
 }
 .statement-text .is-accent { color: var(--accent); }
 .is-accent .char.is-plain { color: var(--fg); } /* кома/крапка після виділеного слова */
-/* Стартовий стан: слова ледь помітні, при скролі стають яскравими (JS) */
-.js:not(.reduced) .statement-text .word { opacity: 0.14; }
+/* Стартовий стан: слова ледь помітні, при скролі стають яскравими (лише коли анімації працюють) */
+.fx .statement-text .word { opacity: 0.14; }
 
 /* Заголовки розділів: кожне слово обрізає свої літери під час появи */
 .section-title .word {
@@ -841,19 +846,20 @@ html:not([lang="en"]) [data-l="en"] { display: none; }
   font-size: clamp(0.98rem, 1.2vw, 1.12rem);
   transition: opacity 0.5s;
 }
-/* Ще «не досягнуті» кроки — приглушені (лише коли працюють анімації) */
-.js:not(.reduced) .process-step:not(.is-active) .process-step-title { color: rgba(241, 240, 234, 0.22); }
-.js:not(.reduced) .process-step:not(.is-active) .process-step-text { opacity: 0.35; }
-/* Активний крок «загоряється» */
+/* Ще «не досягнуті» кроки — приглушені. Тільки з класом .fx (анімації реально працюють):
+   без GSAP / з «без анімацій» кроки повністю видимі */
+.fx .process-step:not(.is-active) .process-step-title { color: rgba(241, 240, 234, 0.22); }
+.fx .process-step:not(.is-active) .process-step-text { opacity: 0.35; }
+/* Активний крок «загоряється»; без анімацій — усі кроки одразу активні */
 .process-step.is-active .process-dot,
-.reduced .process-dot,
-.no-js .process-dot {
+html:not(.fx) .process-dot {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--accent-ink);
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent), 0 0 32px color-mix(in srgb, var(--accent) 60%, transparent);
 }
-.reduced .process-line-fill, .no-js .process-line-fill { stroke-dashoffset: 0; }
+/* Без анімацій лінія одразу намальована повністю */
+html:not(.fx) .process-line-fill { stroke-dashoffset: 0; }
 
 @media (max-width: 600px) {
   .process-body { --line-x: 1.25rem; }
