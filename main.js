@@ -441,31 +441,44 @@ async function initHero3D() {
     return;
   }
 
-  // На телефонах — менше частинок і нижча щільність пікселів
-  // Частинки дрібні, тож висока щільність пікселів майже не видна, а навантаження росте вчетверо
-  const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
-  const COUNT = IS_MOBILE ? 5000 : 12000;
-  const DUST = IS_MOBILE ? 150 : 500;
+  // ---- Рівні якості. Якщо кадрів мало — сцена сама спускається на рівень нижче ----
+  const dpr = window.devicePixelRatio || 1;
+  const QUALITY = [
+    { pr: Math.min(dpr, 1.5), frac: 1 },
+    { pr: Math.min(dpr, 1),   frac: 1 },
+    { pr: Math.min(dpr, 1),   frac: 0.6 },
+    { pr: Math.min(dpr, 0.75), frac: 0.4 },
+  ];
+  let level = IS_MOBILE ? 1 : 0;
+  const COUNT = IS_MOBILE ? 5000 : 10000;
+  const DUST = IS_MOBILE ? 150 : 400;
 
-  renderer.setPixelRatio(pixelRatio);
+  renderer.setPixelRatio(QUALITY[level].pr);
   renderer.setClearColor(0x000000, 0);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
   camera.position.z = 6;
 
-  // Сфера Фібоначчі — рівномірно розподілені точки
+  // Сфера Фібоначчі — рівномірно розподілені точки.
+  // Порядок перемішаний, щоб «перші N точок» теж покривали всю сферу (для нижчих рівнів якості).
+  const order = Array.from({ length: COUNT }, (_, i) => i);
+  for (let i = COUNT - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
   const positions = new Float32Array(COUNT * 3);
   const randoms = new Float32Array(COUNT);
   const golden = Math.PI * (3 - Math.sqrt(5));
-  for (let i = 0; i < COUNT; i++) {
+  for (let k = 0; k < COUNT; k++) {
+    const i = order[k];
     const y = 1 - (i / (COUNT - 1)) * 2;
     const r = Math.sqrt(1 - y * y);
     const th = golden * i;
-    positions[i * 3] = Math.cos(th) * r;
-    positions[i * 3 + 1] = y;
-    positions[i * 3 + 2] = Math.sin(th) * r;
-    randoms[i] = Math.random();
+    positions[k * 3] = Math.cos(th) * r;
+    positions[k * 3 + 1] = y;
+    positions[k * 3 + 2] = Math.sin(th) * r;
+    randoms[k] = Math.random();
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -478,7 +491,7 @@ async function initHero3D() {
     uAspect: { value: 1 },
     uHover: { value: 0 },
     uSize: { value: IS_MOBILE ? 22 : 21 },
-    uPixelRatio: { value: pixelRatio },
+    uPixelRatio: { value: QUALITY[level].pr },
     uScroll: { value: 0 },
     uIntro: { value: REDUCED ? 1 : 0 },
     uColorA: { value: new THREE.Color(accent) },
@@ -538,7 +551,16 @@ async function initHero3D() {
     if (REDUCED) renderer.render(scene, camera);
   };
   new ResizeObserver(resize).observe(hero);
-  resize();
+
+  const applyQuality = () => {
+    const q = QUALITY[level];
+    renderer.setPixelRatio(q.pr);
+    uniforms.uPixelRatio.value = q.pr;
+    geometry.setDrawRange(0, Math.floor(COUNT * q.frac));
+    resize();
+    window.__heroQuality = level;
+  };
+  applyQuality();
 
   // ---- Без анімацій: один статичний кадр і все ----
   if (REDUCED) {
@@ -579,10 +601,35 @@ async function initHero3D() {
   // На екранах 120/144 Гц сцену малюємо приблизно 60 разів на секунду —
   // для повільної сфери різниці не видно, а відеокарта звільняється для курсора й скролу.
   let lastRender = 0;
+
+  // Автопідлаштування: рахуємо кадри у вікнах по 1 с.
+  // Два «повільні» вікна поспіль (< 50 FPS) → знижуємо якість. Вгору не повертаємось, щоб не «стрибало».
+  let winStart = 0;
+  let winFrames = 0;
+  let slowWindows = 0;
+  const warmUntil = performance.now() + 1500; // перші 1.5 с завантажуються шрифти — не рахуємо
+  const monitor = (now) => {
+    if (now < warmUntil) return;
+    if (!winStart) { winStart = now; winFrames = 0; return; }
+    winFrames++;
+    const elapsed = now - winStart;
+    if (elapsed < 1000) return;
+    const fps = (winFrames * 1000) / elapsed;
+    winStart = now;
+    winFrames = 0;
+    slowWindows = fps < 50 ? slowWindows + 1 : 0;
+    if (slowWindows >= 2 && level < QUALITY.length - 1) {
+      level++;
+      slowWindows = 0;
+      applyQuality();
+    }
+  };
+
   const frame = () => {
     if (!running) return;
     requestAnimationFrame(frame);
     const now = performance.now();
+    monitor(now);
     if (now - lastRender < 12) return;
     lastRender = now;
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -605,13 +652,59 @@ async function initHero3D() {
 
   const update = () => {
     const shouldRun = inView && !document.hidden;
-    if (shouldRun && !running) { running = true; clock.getDelta(); frame(); }
+    if (shouldRun && !running) { running = true; winStart = 0; clock.getDelta(); frame(); }
     else if (!shouldRun) running = false;
   };
 
   new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; update(); }).observe(hero);
   document.addEventListener('visibilitychange', update);
   update();
+}
+
+/* =========================================================
+   Зерно: маленька PNG-текстура шуму, згенерована один раз.
+   Легше для браузера, ніж SVG-фільтр на весь екран.
+   ========================================================= */
+function initGrain() {
+  const el = $('.grain');
+  if (!el) return;
+  try {
+    const size = 160;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const img = ctx.createImageData(size, size);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.random() * 255;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    el.style.backgroundImage = `url(${c.toDataURL('image/png')})`;
+  } catch (e) { /* лишається SVG із CSS */ }
+}
+
+/* =========================================================
+   Лічильник FPS для перевірки: додай ?fps до адреси
+   ========================================================= */
+function initFpsMeter() {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;top:5rem;left:1rem;z-index:400;padding:.4rem .7rem;border-radius:8px;background:#000c;color:#fff;font:12px/1.4 ui-monospace,monospace;pointer-events:none';
+  document.body.appendChild(box);
+  let frames = 0;
+  let start = performance.now();
+  const loop = (now) => {
+    frames++;
+    if (now - start >= 500) {
+      const fps = Math.round((frames * 1000) / (now - start));
+      const q = window.__heroQuality ?? '–';
+      box.textContent = `${fps} FPS · quality ${q} · ${innerWidth}×${innerHeight} @${devicePixelRatio}x`;
+      frames = 0;
+      start = now;
+    }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
 }
 
 /* =========================================================
@@ -637,6 +730,8 @@ function init() {
   });
 
   initHero3D();
+  initGrain();
+  if (new URLSearchParams(location.search).has('fps')) initFpsMeter();
 }
 
 init();
