@@ -177,10 +177,10 @@ function initScroll() {
   if (REDUCED || !HAS_GSAP || typeof window.Lenis === 'undefined') return;
 
   lenis = new window.Lenis({
-    // lerp замість duration: скрол одразу відгукується на колесо і не «пливе» після нього
-    lerp: 0.14,
-    wheelMultiplier: 1,
-    smoothWheel: true,
+    // Колесо і тачпад — нативний скрол браузера (звична інерція, як на будь-якому сайті).
+    // Lenis лишається для плавних переходів по якорях (меню, «Гортай») і синхронізації зі ScrollTrigger.
+    smoothWheel: false,
+    syncTouch: false,
   });
 
   lenis.on('scroll', window.ScrollTrigger.update);
