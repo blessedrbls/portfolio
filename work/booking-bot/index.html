@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk" class="no-js" style="--tint: #5aa9ff">
+<html lang="uk" class="no-js" data-page="case" style="--tint: #5aa9ff">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -26,20 +26,34 @@
     (function () {
       var d = document.documentElement;
       d.classList.remove('no-js'); d.classList.add('js');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('reduced');
       try { if (localStorage.getItem('lang') === 'en') d.lang = 'en'; } catch (e) {}
+      // Страховка: якщо скрипти не завантажились — показати перший екран через 3.5 с
+      window.__revealFallback = setTimeout(function () { d.classList.add('reveal-fallback'); }, 3500);
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
-  <link rel="stylesheet" href="../../case.css?v=1">
-  <script defer src="../../case.js?v=1"></script>
+  <link rel="stylesheet" href="../../case.css?v=2">
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script type="module" src="../../main.js?v=52"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"CreativeWork","name":"Barbershop booking bot","alternateName":"Бот онлайн-запису в барбершоп","description":"Clients book a barber in a few taps and only ever see time that is really free. The owner manages the schedule right from Telegram, with no website or separate app.","url":"https://blessedrbls.github.io/portfolio/work/booking-bot/","image":"https://blessedrbls.github.io/portfolio/images/booking-bot.webp","dateCreated":"2026","keywords":"Python, aiogram 3, SQLite, aiosqlite, APScheduler, zoneinfo","author":{"@type":"Person","name":"Oleksii","url":"https://blessedrbls.github.io/portfolio/"},"codeRepository":"https://github.com/blessedrbls/telegram-booking-bot"}</script>
 </head>
 <body>
   <a class="skip-link" href="#main"><span data-l="uk">Перейти до змісту</span><span data-l="en">Skip to content</span></a>
   <div class="case-glow" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor-ring"><span></span></div>
+    <div class="cursor-dot"></div>
+  </div>
+  <div class="scroll-progress" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
 
   <header class="case-header">
     <a class="logo" href="../../" aria-label="oleksii — home">oleksii<span class="accent">*</span></a>
@@ -53,14 +67,15 @@
 
   <main id="main">
     <section class="case-hero">
-      <p class="case-kicker mono"><span class="tint"><span data-l="uk">Telegram-бот</span><span data-l="en">Telegram bot</span></span><span>02 / 05</span></p>
-      <h1 class="case-title"><span data-l="uk">Бот онлайн-запису в барбершоп</span><span data-l="en">Barbershop booking bot</span></h1>
-      <p class="case-lead"><span data-l="uk">Клієнт записується до майстра за кілька дотиків і бачить лише реально вільний час. Власник керує розкладом прямо з Telegram — без сайту й окремої програми.</span><span data-l="en">Clients book a barber in a few taps and only ever see time that is really free. The owner manages the schedule right from Telegram, with no website or separate app.</span></p>
-      <div class="case-actions">
-          <a class="btn btn-primary" href="https://t.me/barbershop_barbershop_bot_bot" target="_blank" rel="noopener" data-goatcounter-click="case-demo-booking-bot"><span data-l="uk">Відкрити в Telegram</span><span data-l="en">Open in Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
-          <a class="btn" href="https://github.com/blessedrbls/telegram-booking-bot" target="_blank" rel="noopener" data-goatcounter-click="case-code-booking-bot"><span data-l="uk">Код на GitHub</span><span data-l="en">Code on GitHub</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+      <canvas class="hero-canvas" aria-hidden="true"></canvas>
+      <p class="case-kicker mono intro"><span class="tint"><span data-l="uk">Telegram-бот</span><span data-l="en">Telegram bot</span></span><span>02 / 05</span></p>
+      <h1 class="case-title" data-split-case><span data-l="uk">Бот онлайн-запису в барбершоп</span><span data-l="en">Barbershop booking bot</span></h1>
+      <p class="case-lead intro"><span data-l="uk">Клієнт записується до майстра за кілька дотиків і бачить лише реально вільний час. Власник керує розкладом прямо з Telegram — без сайту й окремої програми.</span><span data-l="en">Clients book a barber in a few taps and only ever see time that is really free. The owner manages the schedule right from Telegram, with no website or separate app.</span></p>
+      <div class="case-actions intro">
+          <a class="case-btn case-btn-primary" href="https://t.me/barbershop_barbershop_bot_bot" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-demo-booking-bot"><span class="magnetic-inner"><span data-l="uk">Відкрити в Telegram</span><span data-l="en">Open in Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
+          <a class="case-btn" href="https://github.com/blessedrbls/telegram-booking-bot" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-code-booking-bot"><span class="magnetic-inner"><span data-l="uk">Код на GitHub</span><span data-l="en">Code on GitHub</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
       </div>
-      <dl class="case-meta">
+      <dl class="case-meta intro">
         <div><dt class="mono"><span data-l="uk">Роль</span><span data-l="en">Role</span></dt><dd><span data-l="uk">Логіка, розробка бота</span><span data-l="en">Logic and bot development</span></dd></div>
         <div><dt class="mono"><span data-l="uk">Рік</span><span data-l="en">Year</span></dt><dd>2026</dd></div>
         <div><dt class="mono"><span data-l="uk">Формат</span><span data-l="en">Format</span></dt><dd><span data-l="uk">Демо-проєкт для портфоліо</span><span data-l="en">Portfolio demo project</span></dd></div>
@@ -68,107 +83,107 @@
       </dl>
     </section>
 
-    <figure class="case-cover reveal">
+    <figure class="case-cover">
       <img src="../../images/booking-bot.webp" srcset="../../images/booking-bot-1000.webp 1000w, ../../images/booking-bot.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="1000" alt="" fetchpriority="high">
     </figure>
 
-    <section class="case-block reveal" aria-labelledby="h-task">
+    <section class="case-block" id="s-task" aria-labelledby="h-task">
       <h2 class="block-label mono" id="h-task"><span class="num">01</span><span data-l="uk">Задача</span><span data-l="en">The task</span></h2>
       <p class="case-statement"><span data-l="uk">Барбершопу потрібно, щоб клієнти записувались самі будь-коли, без дзвінків і переписок, у майстрів не було накладок, а клієнти не забували про візит.</span><span data-l="en">A barbershop wants clients to book on their own at any time, without calls or chats, with no double bookings for barbers and fewer forgotten visits.</span></p>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-flow">
+    <section class="case-block" id="s-flow" aria-labelledby="h-flow">
       <h2 class="block-label mono" id="h-flow"><span class="num">02</span><span data-l="uk">Як це працює</span><span data-l="en">How it works</span></h2>
       <ol class="flow">
-        <li class="reveal"><span class="flow-num mono">01</span><p><span data-l="uk">Клієнт обирає філію, послугу з ціною й тривалістю, майстра (картки з фото) і дату.</span><span data-l="en">The client picks a location, a service with price and duration, a barber (photo cards) and a date.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">02</span><p><span data-l="uk">Бот показує тільки вільні 30-хвилинні слоти з урахуванням тривалості послуги та вихідних.</span><span data-l="en">The bot shows only free 30-minute slots, taking service length and days off into account.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">03</span><p><span data-l="uk">Після підтвердження адміни отримують сповіщення, а боту плануються нагадування.</span><span data-l="en">After confirmation the admins are notified and reminders are scheduled.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">04</span><p><span data-l="uk">За 24 і 2 години — нагадування з кнопками «Прийду / Скасувати», після візиту — оцінка.</span><span data-l="en">Reminders arrive 24 h and 2 h before with “I’ll come / Cancel” buttons, and a rating request follows the visit.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">01</span><p><span data-l="uk">Клієнт обирає філію, послугу з ціною й тривалістю, майстра (картки з фото) і дату.</span><span data-l="en">The client picks a location, a service with price and duration, a barber (photo cards) and a date.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">02</span><p><span data-l="uk">Бот показує тільки вільні 30-хвилинні слоти з урахуванням тривалості послуги та вихідних.</span><span data-l="en">The bot shows only free 30-minute slots, taking service length and days off into account.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">03</span><p><span data-l="uk">Після підтвердження адміни отримують сповіщення, а боту плануються нагадування.</span><span data-l="en">After confirmation the admins are notified and reminders are scheduled.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-bar flow-bar--end" aria-hidden="true"></span><span class="flow-num mono">04</span><p><span data-l="uk">За 24 і 2 години — нагадування з кнопками «Прийду / Скасувати», після візиту — оцінка.</span><span data-l="en">Reminders arrive 24 h and 2 h before with “I’ll come / Cancel” buttons, and a rating request follows the visit.</span></p></li>
       </ol>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-solution">
+    <section class="case-block" id="s-solution" aria-labelledby="h-solution">
       <h2 class="block-label mono" id="h-solution"><span class="num">03</span><span data-l="uk">Що зроблено</span><span data-l="en">What was built</span></h2>
       <div class="features">
-        <div class="feature-col reveal">
+        <div class="feature-col">
           <h3><span data-l="uk">Для клієнта</span><span data-l="en">For clients</span></h3>
           <ul><li><span data-l="uk">Запис в одному повідомленні з кнопками «Назад» і «Скасувати» на кожному кроці</span><span data-l="en">Booking in a single message with Back and Cancel on every step</span></li><li><span data-l="uk">«Мої записи» зі скасуванням і підтвердженням</span><span data-l="en">“My bookings” with cancel and confirmation</span></li><li><span data-l="uk">Адреси, години роботи й кнопка Google Maps для кожної філії</span><span data-l="en">Addresses, opening hours and a Google Maps button for each location</span></li><li><span data-l="uk">Англійська та українська, мову можна змінити будь-коли</span><span data-l="en">English and Ukrainian, switchable at any time</span></li></ul>
         </div>
-        <div class="feature-col reveal">
+        <div class="feature-col">
           <h3><span data-l="uk">Для власника</span><span data-l="en">For the owner</span></h3>
           <ul><li><span data-l="uk">Миттєві сповіщення про записи, скасування й негативні відгуки</span><span data-l="en">Instant notifications about bookings, cancellations and negative feedback</span></li><li><span data-l="uk">Адмін-панель: записи на будь-яку дату з лічильником по днях</span><span data-l="en">Admin panel: bookings for any date with a per-day counter</span></li><li><span data-l="uk">Вихідний для майстра одним дотиком</span><span data-l="en">A day off for a barber in one tap</span></li><li><span data-l="uk">Автозавершення візиту, якщо адмін забув його відмітити</span><span data-l="en">Visits are auto-completed if the admin forgets to mark them</span></li></ul>
         </div>
       </div>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-details">
+    <section class="case-block" id="s-details" aria-labelledby="h-details">
       <h2 class="block-label mono" id="h-details"><span class="num">04</span><span data-l="uk">Цікаві рішення</span><span data-l="en">Under the hood</span></h2>
       <div class="details">
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Жодних подвійних записів</span><span data-l="en">No double bookings</span></h3>
           <p><span data-l="uk">Запис іде в транзакції бази даних: двоє клієнтів не займуть один слот, навіть якщо натиснуть «Підтвердити» в ту саму секунду.</span><span data-l="en">Bookings run inside a database transaction, so two clients can never take the same slot, even if they confirm in the same second.</span></p>
         </article>
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Чесні вільні слоти</span><span data-l="en">Honest free slots</span></h3>
           <p><span data-l="uk">Слот показується, лише якщо послуга встигає закінчитись до кінця зміни, він не в минулому, не перетинається з іншими записами й не припадає на вихідний.</span><span data-l="en">A slot appears only if the service ends before the shift does, it is not in the past, it does not overlap other bookings and it is not a day off.</span></p>
         </article>
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Переживає перезапуск</span><span data-l="en">Survives restarts</span></h3>
           <p><span data-l="uk">Нагадування й запити оцінки відновлюються з бази при старті, а пропущені під час простою — надсилаються одразу.</span><span data-l="en">Reminders and rating requests are restored from the database on start, and anything missed while offline is sent right away.</span></p>
         </article>
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Відгуки туди, де вони потрібні</span><span data-l="en">Reviews where they matter</span></h3>
           <p><span data-l="uk">Оцінка 4–5★ веде на Google Maps, 1–3★ — бот питає, що пішло не так, і пересилає це адмінам.</span><span data-l="en">A 4–5★ rating leads to Google Maps; for 1–3★ the bot asks what went wrong and forwards it to the admins.</span></p>
         </article>
       </div>
     </section>
 
-    <section class="case-block case-gallery" aria-labelledby="h-gallery">
-      <h2 class="block-label mono reveal" id="h-gallery"><span class="num">05</span><span data-l="uk">Скриншоти</span><span data-l="en">Screenshots</span></h2>
+    <section class="case-block case-gallery" id="s-gallery" aria-labelledby="h-gallery">
+      <h2 class="block-label mono" id="h-gallery"><span class="num">05</span><span data-l="uk">Скриншоти</span><span data-l="en">Screenshots</span></h2>
         <div class="gallery gallery-chats">
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/main-menu.webp" data-w="900" data-h="574" aria-label="Збільшити: Головне меню" data-label-uk="Збільшити: Головне меню" data-label-en="Enlarge: Main menu">
               <img src="../../images/cases/booking-bot/main-menu.webp" width="900" height="574" alt="Головне меню" data-alt-uk="Головне меню" data-alt-en="Main menu" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Головне меню</span><span data-l="en">Main menu</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/master.webp" data-w="900" data-h="1387" aria-label="Збільшити: Вибір майстра" data-label-uk="Збільшити: Вибір майстра" data-label-en="Enlarge: Choosing a barber">
               <img src="../../images/cases/booking-bot/master.webp" width="900" height="1387" alt="Вибір майстра" data-alt-uk="Вибір майстра" data-alt-en="Choosing a barber" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Вибір майстра</span><span data-l="en">Choosing a barber</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/time.webp" data-w="900" data-h="537" aria-label="Збільшити: Вільний час" data-label-uk="Збільшити: Вільний час" data-label-en="Enlarge: Free time slots">
               <img src="../../images/cases/booking-bot/time.webp" width="900" height="537" alt="Вільний час" data-alt-uk="Вільний час" data-alt-en="Free time slots" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Вільний час</span><span data-l="en">Free time slots</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/confirm.webp" data-w="900" data-h="681" aria-label="Збільшити: Підтвердження запису" data-label-uk="Збільшити: Підтвердження запису" data-label-en="Enlarge: Booking confirmation">
               <img src="../../images/cases/booking-bot/confirm.webp" width="900" height="681" alt="Підтвердження запису" data-alt-uk="Підтвердження запису" data-alt-en="Booking confirmation" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Підтвердження запису</span><span data-l="en">Booking confirmation</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/reminder.webp" data-w="900" data-h="653" aria-label="Збільшити: Нагадування" data-label-uk="Збільшити: Нагадування" data-label-en="Enlarge: Reminder">
               <img src="../../images/cases/booking-bot/reminder.webp" width="900" height="653" alt="Нагадування" data-alt-uk="Нагадування" data-alt-en="Reminder" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Нагадування</span><span data-l="en">Reminder</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/rating.webp" data-w="900" data-h="458" aria-label="Збільшити: Оцінка після візиту" data-label-uk="Збільшити: Оцінка після візиту" data-label-en="Enlarge: Rating after the visit">
               <img src="../../images/cases/booking-bot/rating.webp" width="900" height="458" alt="Оцінка після візиту" data-alt-uk="Оцінка після візиту" data-alt-en="Rating after the visit" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Оцінка після візиту</span><span data-l="en">Rating after the visit</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/admin.webp" data-w="900" data-h="398" aria-label="Збільшити: Адмін: активний запис" data-label-uk="Збільшити: Адмін: активний запис" data-label-en="Enlarge: Admin: active booking">
               <img src="../../images/cases/booking-bot/admin.webp" width="900" height="398" alt="Адмін: активний запис" data-alt-uk="Адмін: активний запис" data-alt-en="Admin: active booking" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Адмін: активний запис</span><span data-l="en">Admin: active booking</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/booking-bot/admin-done.webp" data-w="612" data-h="392" aria-label="Збільшити: Адмін: завершений запис з оцінкою" data-label-uk="Збільшити: Адмін: завершений запис з оцінкою" data-label-en="Enlarge: Admin: completed booking with rating">
               <img src="../../images/cases/booking-bot/admin-done.webp" width="612" height="392" alt="Адмін: завершений запис з оцінкою" data-alt-uk="Адмін: завершений запис з оцінкою" data-alt-en="Admin: completed booking with rating" loading="lazy" decoding="async">
             </button>
@@ -177,24 +192,24 @@
         </div>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-benefits">
+    <section class="case-block" id="s-benefits" aria-labelledby="h-benefits">
       <h2 class="block-label mono" id="h-benefits"><span class="num">06</span><span data-l="uk">Що це дає бізнесу</span><span data-l="en">What it gives the business</span></h2>
       <ul class="benefits">
-        <li><span data-l="uk">Запис 24/7 без адміністратора на телефоні</span><span data-l="en">24/7 booking with nobody on the phone</span></li>
-        <li><span data-l="uk">Нагадування з кнопками допомагають не втрачати візити</span><span data-l="en">Reminders with buttons help avoid missed visits</span></li>
-        <li><span data-l="uk">Задоволені клієнти йдуть по відгук на Google Maps, невдоволені — пишуть власнику</span><span data-l="en">Happy clients are sent to Google Maps; unhappy ones talk to the owner</span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Запис 24/7 без адміністратора на телефоні</span><span data-l="en">24/7 booking with nobody on the phone</span></span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Нагадування з кнопками допомагають не втрачати візити</span><span data-l="en">Reminders with buttons help avoid missed visits</span></span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Задоволені клієнти йдуть по відгук на Google Maps, невдоволені — пишуть власнику</span><span data-l="en">Happy clients are sent to Google Maps; unhappy ones talk to the owner</span></span></li>
       </ul>
     </section>
 
-    <a class="case-next reveal" href="../barbershop-site/" style="--next-tint: #d4b05a">
+    <a class="case-next" href="../barbershop-site/" style="--next-tint: #d4b05a" data-tint="#d4b05a" data-cursor>
       <span class="mono"><span data-l="uk">Наступний проєкт</span><span data-l="en">Next project</span></span>
-      <span class="case-next-title"><span data-l="uk">Сайт барбершопу</span><span data-l="en">Barbershop website</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+      <span class="case-next-title"><span class="case-next-name" data-split-case><span data-l="uk">Сайт барбершопу</span><span data-l="en">Barbershop website</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
     </a>
 
-    <section class="case-cta reveal">
-      <h2 class="cta-title"><span data-l="uk">Потрібно щось <span class="accent">схоже</span>?</span><span data-l="en">Need something <span class="accent">like this</span>?</span></h2>
+    <section class="case-cta">
+      <h2 class="cta-title" data-split-case><span data-l="uk">Потрібно щось <span class="accent">схоже</span>?</span><span data-l="en">Need something <span class="accent">like this</span>?</span></h2>
       <p><span data-l="uk">Напишіть у Telegram — обговоримо задачу й терміни.</span><span data-l="en">Message me on Telegram and we’ll talk about your task and timeline.</span></p>
-      <a class="btn btn-primary btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-goatcounter-click="case-telegram-booking-bot"><span data-l="uk">Написати в Telegram</span><span data-l="en">Message on Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+      <a class="case-btn case-btn-primary case-btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-magnetic="0.35" data-goatcounter-click="case-telegram-booking-bot"><span class="magnetic-inner"><span data-l="uk">Написати в Telegram</span><span data-l="en">Message on Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
     </section>
   </main>
 

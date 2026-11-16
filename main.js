@@ -219,6 +219,8 @@ const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const IS_TOUCH = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 const IS_MOBILE = IS_TOUCH || window.innerWidth < 768;
 const HAS_GSAP = typeof window.gsap !== 'undefined';
+// Яка це сторінка: головна чи кейс (work/<slug>/ — <html data-page="case">)
+const PAGE = document.documentElement.dataset.page || 'home';
 
 // Якщо користувач змінить налаштування анімацій — просто перезавантажимо
 window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -783,12 +785,11 @@ function renderProjects() {
       </div>
       <div class="project-body">
         <div class="project-meta mono"><span class="project-type">${both(p.type)}</span><span>${n(i + 1)} / ${n(PROJECTS.length)}</span></div>
-        <h3 class="project-title">${p.case ? `<a href="${esc(p.case)}">${both(p.title)}</a>` : both(p.title)}</h3>
+        <h3 class="project-title">${p.case ? `<a class="project-link" href="${esc(p.case)}" data-goatcounter-click="card-case-${i}">${both(p.title)}</a>` : both(p.title)}</h3>
         <p class="project-desc">${both(p.desc)}</p>
         <ul class="project-tags" role="list">${p.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
         <div class="project-actions">
           ${p.demo ? `<a class="project-btn project-btn--demo" href="${esc(p.demo)}" target="_blank" rel="noopener" data-goatcounter-click="card-demo-${i}"${p.preview ? ` data-preview="${i}"` : ''}>${both({ uk: 'Демо', en: 'Demo' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
-          ${p.case ? `<a class="project-btn project-btn--case" href="${esc(p.case)}" data-goatcounter-click="card-case-${i}">${both({ uk: 'Кейс', en: 'Case study' })}<span class="sr-only">: ${both(p.title)}</span>${arrow}</a>` : ''}
           ${p.code ? `<a class="project-btn project-btn--code" href="${esc(p.code)}" target="_blank" rel="noopener" data-goatcounter-click="card-code-${i}">${both({ uk: 'Код', en: 'Code' })}<span class="sr-only">: ${both(p.title)}</span>${codeIcon}</a>` : ''}
         </div>
       </div>
@@ -897,7 +898,7 @@ function initPreview() {
   track.addEventListener('click', (e) => {
     // Клік по картинці проєкту — теж відкриває демо (живе, якщо є; інакше — посилання)
     const media = e.target.closest('.project-media');
-    if (media) {
+    if (media && !media.closest('.project-card')?.querySelector('.project-link')) {
       const card = media.closest('.project-card');
       const p = PROJECTS[[...track.children].indexOf(card)];
       if (!p) return;
@@ -1213,7 +1214,7 @@ const FRAGMENT = /* glsl */`
 
 async function initHero3D() {
   const canvas = $('.hero-canvas');
-  const hero = $('.hero');
+  const hero = $('.hero') || $('.case-hero');
   if (!canvas || !hero) return;
 
   let THREE;
@@ -1301,7 +1302,8 @@ async function initHero3D() {
   // «пухка хмара» й вибух виходять за одиничну сферу — щоб Three.js не відкидав їх як «невидимі»
   geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 4);
 
-  const accent = getComputedStyle(html).getPropertyValue('--accent').trim() || '#a374ff';
+  // На сторінці кейсу сфера — кольору проєкту
+  const accent = getComputedStyle(html).getPropertyValue(PAGE === 'case' ? '--tint' : '--accent').trim() || '#a374ff';
   const uniforms = {
     uTime: { value: 0 },
     uMouse: { value: new THREE.Vector2(0, 0) },
@@ -1427,7 +1429,11 @@ async function initHero3D() {
     const halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z;
     const halfW = halfH * camera.aspect;
     const wide = camera.aspect > 1.05;
-    if (wide) {
+    if (PAGE === 'case') {
+      // Кейс: на першому екрані сфера праворуч від заголовка; на телефоні — вгорі, тьмяніша
+      if (wide) Object.assign(layout, { x: halfW * 0.56, y: halfH * 0.12, s: Math.min(1.0, halfH * 0.5), dim: 0.95 });
+      else Object.assign(layout, { x: halfW * 0.35, y: halfH * 0.55, s: Math.min(halfW * 0.62, 0.9), dim: 0.5 });
+    } else if (wide) {
       // Десктоп: сфера праворуч, за текстом
       Object.assign(layout, { x: halfW * 0.38, y: halfH * 0.08, s: Math.min(1.25, halfH * 0.62) });
     } else {
@@ -1458,6 +1464,23 @@ async function initHero3D() {
       mood({ x: 0, y: 0,            s: halfW * 0.5,  amp: 0.12, freq: 2.6, spread: 0.03, flow: 0.6, spin: 0.06, dim: 0.35 }),
       mood({ x: 0, y: -halfH * 0.35, s: halfW * 0.72, amp: 0.3, freq: 1.5, spread: 0.08, flow: 1.1, glow: 0.3, spin: 0.15, dim: 0.6 }),
     ];
+    if (PAGE === 'case') {
+      // Кейс: обкладинка → «Як це працює» (ліва порожня колонка) → «Цікаві рішення» →
+      // скриншоти (велика тьмяна хмара позаду) → наступний проєкт і заклик (яскрава, по центру)
+      stagesPlace = wide ? [
+        mood({ x: halfW * 0.7, y: halfH * 0.62, s: Math.min(0.42, halfH * 0.22), amp: 0.3, freq: 1.2, spread: 0.06, flow: 1.4, glow: 0.12, spin: 0.12, dim: 0.75 }),
+        mood({ x: -halfW * 0.64, y: -halfH * 0.38, s: Math.min(0.48, halfH * 0.26), amp: 0.12, freq: 2.6, spread: 0.03, flow: 0.6, glow: 0.06, spin: 0.06, dim: 0.8 }),
+        mood({ x: -halfW * 0.64, y: -halfH * 0.32, s: Math.min(0.36, halfH * 0.2), amp: 0.18, freq: 3.2, spread: 0.04, flow: 1.8, glow: 0.14, spin: 0.35, dim: 0.75 }),
+        mood({ x: 0, y: 0, s: Math.min(1.7, halfH * 0.95), amp: 0.34, freq: 1.0, spread: 0.12, flow: 0.7, glow: 0.05, spin: 0.04, dim: 0.32 }),
+        mood({ x: halfW * 0.25, y: halfH * 0.3, s: Math.min(0.62, halfH * 0.33), amp: 0.3, freq: 1.5, spread: 0.08, flow: 1.1, glow: 0.3, spin: 0.15, dim: 0.9 }),
+      ] : [
+        mood({ x: halfW * 0.5, y: halfH * 0.7, s: halfW * 0.3, amp: 0.3, freq: 1.2, spread: 0.06, flow: 1.4, glow: 0.12, dim: 0.5 }),
+        mood({ x: 0, y: 0, s: halfW * 0.55, amp: 0.12, freq: 2.6, spread: 0.03, flow: 0.6, spin: 0.06, dim: 0.3 }),
+        mood({ x: 0, y: halfH * 0.1, s: halfW * 0.4, amp: 0.18, freq: 3.2, spread: 0.04, flow: 1.8, glow: 0.12, spin: 0.35, dim: 0.35 }),
+        mood({ x: 0, y: 0, s: halfW * 0.95, amp: 0.34, freq: 1.0, spread: 0.12, flow: 0.7, spin: 0.04, dim: 0.25 }),
+        mood({ x: halfW * 0.3, y: halfH * 0.35, s: halfW * 0.5, amp: 0.3, freq: 1.5, spread: 0.08, flow: 1.1, glow: 0.3, spin: 0.15, dim: 0.6 }),
+      ];
+    }
     if (!GUIDE || STATIC) {
       root.position.set(layout.x, layout.y, 0);
       root.scale.setScalar(layout.s);
@@ -1490,7 +1513,9 @@ async function initHero3D() {
   // ---- Де починається кожен блок: звідси рахуємо, яку фігуру показувати ----
   // Перехід до фігури блоку — поки його верх їде від 60 % до 15 % висоти екрана
   // (пізніше, ніж з'являється блок, — щоб фігура не мінялась, поки дочитуєш попередній)
-  const STAGE_SECTIONS = ['.statement', '#services', '#work', '#process', '#contact'];
+  const STAGE_SECTIONS = PAGE === 'case'
+    ? ['.case-cover', '#s-flow', '#s-details', '#s-gallery', '.case-next']
+    : ['.statement', '#services', '#work', '#process', '#contact'];
   let stops = [];
   const measure = () => {
     const H = window.innerHeight;
@@ -1648,7 +1673,7 @@ async function initHero3D() {
     // далі — плавно змішуємо настрої блоків залежно від того, де ми на сторінці
     const target = {
       x: layout.x * (1 - move), y: layout.y * (1 - move), s: layout.s * (1 + move * 0.3),
-      amp: 0.26, freq: 1.5, spread: 0.07, flow: 1, glow: 0, sx: 1, sy: 1, spin: 0.07 + move * 0.5, dim: 1,
+      amp: 0.26, freq: 1.5, spread: 0.07, flow: 1, glow: 0, sx: 1, sy: 1, spin: 0.07 + move * 0.5, dim: layout.dim ?? 1,
     };
     let regroup = 0;
     if (GUIDE) {
@@ -1779,9 +1804,267 @@ function initGrain() {
 }
 
 /* =========================================================
+   Сторінка-кейс (work/<slug>/): та сама сфера-провідник і зорі,
+   поява першого екрана по літерах, ефекти скролу, нахил карток
+   ========================================================= */
+
+// Мова на кейсі: тексти обома мовами вже в HTML ([data-l]), перемикаємо видимість
+function initCaseLang() {
+  const titleEn = ($('.case-title [data-l="en"]')?.dataset.text || '') + ' — case study · Oleksii';
+  const titles = { uk: document.title, en: titleEn };
+  const set = (lang) => {
+    html.lang = lang;
+    document.title = titles[lang];
+    $$('.lang-switch [data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+    $$(`[data-alt-${lang}]`).forEach((el) => { el.alt = el.getAttribute(`data-alt-${lang}`); });
+    $$(`[data-label-${lang}]`).forEach((el) => el.setAttribute('aria-label', el.getAttribute(`data-label-${lang}`)));
+    try { localStorage.setItem('lang', lang); } catch (e) { /* приватний режим */ }
+  };
+  set(html.lang === 'en' ? 'en' : 'uk');
+  $$('.lang-switch [data-lang]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.lang === html.lang) return;
+    if (HAS_GSAP && !REDUCED) {
+      // м'яко: вміст гасне, мова змінюється, вміст з'являється
+      window.gsap.to('main', { opacity: 0, duration: 0.2, onComplete: () => {
+        set(b.dataset.lang);
+        window.ScrollTrigger?.refresh();
+        window.gsap.to('main', { opacity: 1, duration: 0.35 });
+      } });
+    } else set(b.dataset.lang);
+  }));
+}
+
+// Розбиваємо заголовки на літери (обидві мови). *слово* → акцентний колір
+function splitCaseText() {
+  $$('[data-split-case] [data-l]').forEach((el) => {
+    // <span class="accent">x</span> → *x* (формат splitText)
+    const raw = [...el.childNodes].map((n) => (n.nodeType === 3 ? n.textContent : `*${n.textContent}*`)).join('');
+    el.dataset.text = raw.replace(/\*/g, '');
+    splitText(el, raw.trim());
+  });
+  // Фраза «Задача»: слова, що «загоряються» при скролі
+  $$('.case-statement [data-l]').forEach((el) => {
+    const text = el.textContent.trim();
+    const words = text.split(/\s+/);
+    el.innerHTML = '';
+    const sr = document.createElement('span'); // текст для скрінрідерів (aria-label на span заборонений)
+    sr.className = 'sr-only';
+    sr.textContent = text;
+    el.appendChild(sr);
+    words.forEach((w, i) => {
+      const s = document.createElement('span');
+      s.className = 'w';
+      s.setAttribute('aria-hidden', 'true');
+      s.textContent = w;
+      el.appendChild(s);
+      if (i < words.length - 1) el.appendChild(document.createTextNode(' '));
+    });
+  });
+}
+
+// Поява першого екрана: літери заголовка піднімаються, решта виїжджає знизу
+function revealCase() {
+  clearTimeout(window.__revealFallback);
+  if (REDUCED || !HAS_GSAP) { html.classList.add('reveal-fallback'); return; }
+  const { gsap } = window;
+  gsap.set(['.case-title', '.intro'], { opacity: 1 });
+  gsap.timeline({ defaults: { ease: 'expo.out' } })
+    .fromTo('.case-kicker', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1 }, 0)
+    .fromTo('.case-title .char-in', { yPercent: 115, rotate: 8, opacity: 0 },
+      { yPercent: 0, rotate: 0, opacity: 1, duration: 1.2, stagger: 0.022 }, 0.1)
+    .fromTo('.case-lead', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1.1 }, 0.55)
+    .fromTo('.case-actions > *', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1, stagger: 0.08 }, 0.7)
+    .fromTo('.case-meta > div', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1, stagger: 0.07 }, 0.8)
+    .fromTo('.case-meta', { '--meta-line': 0 }, { '--meta-line': 1, duration: 1.4, ease: 'expo.inOut' }, 0.7);
+}
+
+function initCaseFx() {
+  if (REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
+  const { gsap } = window;
+  const ST = window.ScrollTrigger;
+  html.classList.add('fx');
+
+  // Обкладинка: «розкривається» з вузької рамки й наближається, далі — легкий паралакс
+  const cover = $('.case-cover');
+  if (cover) {
+    gsap.fromTo(cover, { clipPath: 'inset(14% 9% 0% 9% round 32px)', y: 60 }, {
+      clipPath: 'inset(0% 0% 0% 0% round 26px)', y: 0, ease: 'none',
+      scrollTrigger: { trigger: cover, start: 'top bottom', end: 'top 30%', scrub: 0.6 },
+    });
+    gsap.fromTo($('img', cover), { scale: 1.22 }, {
+      scale: 1, ease: 'none',
+      scrollTrigger: { trigger: cover, start: 'top bottom', end: 'bottom top', scrub: 0.6 },
+    });
+  }
+
+  // Підписи блоків («01 Задача» …): номер і назва виїжджають зліва
+  $$('.block-label').forEach((label) => {
+    gsap.from(label.children, {
+      opacity: 0, x: -30, duration: 0.9, ease: 'power3.out', stagger: 0.08,
+      scrollTrigger: { trigger: label, start: 'top 88%', once: true },
+    });
+  });
+
+  // «Задача»: слова загоряються від ледь помітних до яскравих, поки гортаєш
+  // Приглушуємо слова лише коли блок уже близько до екрана: до того текст повністю видимий
+  // (і для перевірки контрасту, і якщо хтось перейде одразу до середини сторінки)
+  ST.create({
+    trigger: '.case-statement', start: 'top bottom+=10%', once: true,
+    onEnter: () => $$('.case-statement [data-l]').forEach((el) => {
+      gsap.fromTo($$('.w', el), { opacity: 0.14 }, {
+        opacity: 1, ease: 'none', stagger: 0.1,
+        scrollTrigger: { trigger: '.case-statement', start: 'top 82%', end: 'bottom 50%', scrub: 0.5 },
+      });
+    }),
+  });
+
+  // «Як це працює»: лінія кожного кроку промальовується, номер і текст виїжджають
+  $$('.flow li').forEach((li) => {
+    gsap.timeline({ scrollTrigger: { trigger: li, start: 'top 86%', once: true } })
+      .fromTo($('.flow-bar', li), { scaleX: 0 }, { scaleX: 1, duration: 1.2, ease: 'expo.inOut' }, 0)
+      .from($('.flow-num', li), { opacity: 0, y: 20, duration: 0.8, ease: 'power3.out' }, 0.2)
+      .from($('p', li), { opacity: 0, y: 26, duration: 1, ease: 'expo.out' }, 0.3);
+  });
+  const lastFlow = $('.flow li:last-child .flow-bar--end');
+  if (lastFlow) {
+    gsap.fromTo(lastFlow, { scaleX: 0 }, { scaleX: 1, duration: 1.2, ease: 'expo.inOut', scrollTrigger: { trigger: lastFlow, start: 'top 92%', once: true } });
+  }
+
+  // «Що зроблено»: колонки піднімаються з легким поворотом, пункти — по черзі
+  $$('.feature-col').forEach((col, i) => {
+    gsap.timeline({ scrollTrigger: { trigger: col, start: 'top 85%', once: true } })
+      .from(col, { opacity: 0, y: 80, rotateX: -12, transformOrigin: '50% 0%', duration: 1.2, ease: 'expo.out', delay: i * 0.1 }, 0)
+      .from($$('li', col), { opacity: 0, x: -24, duration: 0.8, ease: 'power3.out', stagger: 0.07 }, 0.35 + i * 0.1);
+  });
+
+  // «Цікаві рішення»: картки злітають «віялом»
+  const details = $$('.detail');
+  if (details.length) {
+    gsap.from(details, {
+      opacity: 0, y: 100, rotate: (i) => (i % 2 ? 3 : -3), duration: 1.2, ease: 'expo.out', stagger: 0.1,
+      scrollTrigger: { trigger: '.details', start: 'top 85%', once: true },
+    });
+  }
+
+  // Скриншоти: з'являються пачками, коли доходять до екрана
+  const shots = $$('.shot');
+  if (shots.length) {
+    gsap.set(shots, { opacity: 0, y: 70, scale: 0.94 });
+    ST.batch(shots, {
+      start: 'top 92%', once: true,
+      onEnter: (batch) => gsap.to(batch, { opacity: 1, y: 0, scale: 1, duration: 1.1, ease: 'expo.out', stagger: 0.09, overwrite: true }),
+    });
+  }
+
+  // «Що це дає бізнесу»: рядки виїжджають, лінії під ними промальовуються
+  $$('.benefits li').forEach((li) => {
+    gsap.timeline({ scrollTrigger: { trigger: li, start: 'top 88%', once: true } })
+      .fromTo($('.benefit-bar', li), { scaleX: 0 }, { scaleX: 1, duration: 1.2, ease: 'expo.inOut' }, 0)
+      .from($('.benefit-text', li), { opacity: 0, x: -50, duration: 1.1, ease: 'expo.out' }, 0.15);
+  });
+
+  // Наступний проєкт: картка піднімається, назва — по літерах
+  const next = $('.case-next');
+  if (next) {
+    gsap.timeline({ scrollTrigger: { trigger: next, start: 'top 85%', once: true } })
+      .from(next, { opacity: 0, y: 80, scale: 0.96, duration: 1.2, ease: 'expo.out' }, 0)
+      .from($$('.case-next-title .char-in', next), { yPercent: 115, rotate: 8, duration: 1, ease: 'expo.out', stagger: 0.02 }, 0.2);
+  }
+
+  // Великий заклик: літери піднімаються одна за одною, поки гортаєш (як у «Контактах» на головній)
+  const cta = $$('.cta-title .char-in');
+  if (cta.length) {
+    gsap.fromTo(cta, { yPercent: 115, rotate: 10 }, {
+      yPercent: 0, rotate: 0, ease: 'power3.out', stagger: 0.03,
+      scrollTrigger: { trigger: '.cta-title', start: 'top 92%', end: 'top 50%', scrub: 0.6 },
+    });
+    gsap.from(['.case-cta p', '.case-cta .case-btn'], {
+      opacity: 0, y: 30, duration: 1, ease: 'expo.out', stagger: 0.1,
+      scrollTrigger: { trigger: '.case-cta p', start: 'top 92%', once: true },
+    });
+  }
+}
+
+// Нахил карток за мишею + світло там, де курсор (як картки послуг на головній)
+function initTilt(selector) {
+  if (IS_TOUCH || REDUCED || !HAS_GSAP) return;
+  const { gsap } = window;
+  $$(selector).forEach((card) => {
+    const rx = gsap.quickTo(card, 'rotateX', { duration: 0.6, ease: 'power3.out' });
+    const ry = gsap.quickTo(card, 'rotateY', { duration: 0.6, ease: 'power3.out' });
+    gsap.set(card, { transformPerspective: 900 });
+    card.addEventListener('pointermove', (e) => {
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;
+      const py = (e.clientY - r.top) / r.height;
+      rx((0.5 - py) * 7);
+      ry((px - 0.5) * 9);
+      card.style.setProperty('--mx', `${px * 100}%`);
+      card.style.setProperty('--my', `${py * 100}%`);
+    });
+    card.addEventListener('pointerleave', () => { rx(0); ry(0); });
+  });
+}
+
+// Перегляд скриншота на весь екран (<dialog>: Esc закриває, фокус повертається)
+function initZoom() {
+  const dlg = $('.zoom');
+  if (!dlg || typeof dlg.showModal !== 'function') {
+    $$('[data-zoom]').forEach((b) => b.addEventListener('click', () => window.open(b.dataset.zoom, '_blank')));
+    return;
+  }
+  const big = $('img', dlg);
+  let opener = null;
+  $$('[data-zoom]').forEach((btn) => btn.addEventListener('click', () => {
+    opener = btn;
+    big.src = btn.dataset.zoom;
+    big.width = +btn.dataset.w;
+    big.height = +btn.dataset.h;
+    big.alt = $('img', btn)?.alt || '';
+    dlg.showModal();
+    lenis?.stop();
+    if (HAS_GSAP && !REDUCED) window.gsap.fromTo(big, { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'expo.out' });
+  }));
+  $('.zoom-close', dlg).addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target === big) dlg.close(); });
+  dlg.addEventListener('close', () => { lenis?.start(); opener?.focus(); });
+}
+
+function initCasePage() {
+  splitCaseText();
+  initCaseLang();
+  initScroll();
+  initScrollMotion();
+  initCursor();
+  initMagnetic();
+  initZoom();
+
+  // Наведення на «Наступний проєкт» — сфера забарвлюється в його колір
+  const next = $('.case-next');
+  if (next && !IS_TOUCH) {
+    next.addEventListener('pointerenter', () => window.__sphere?.tint(next.dataset.tint, true));
+    next.addEventListener('pointerleave', () => window.__sphere?.tint(null));
+  }
+
+  const fonts = document.fonts?.ready ?? Promise.resolve();
+  Promise.race([fonts, new Promise((r) => setTimeout(r, 1000))]).then(() => {
+    resolvePageReady();
+    revealCase();
+    initCaseFx();
+    initTilt('.feature-col, .detail');
+    refreshScroll();
+  });
+
+  initHero3D();
+  initGrain();
+  if (new URLSearchParams(location.search).has('fps')) initFpsMeter();
+}
+
+/* =========================================================
    Старт
    ========================================================= */
 function init() {
+  if (PAGE === 'case') { initCasePage(); return; }
   let saved = 'uk';
   try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ }
   renderProjects();

@@ -652,6 +652,7 @@ html.lenis, html.lenis body { height: auto; }
 }
 
 .project-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);
@@ -736,10 +737,14 @@ html.lenis, html.lenis body { height: auto; }
 .project-btn svg { width: 0.9em; height: 0.9em; }
 .project-btn--demo { background: var(--accent); color: var(--accent-ink); }
 .project-btn--demo:hover { background: var(--fg); }
-.project-btn--case { border: 1px solid var(--accent); color: var(--fg); }
-.project-btn--case:hover { background: var(--accent); color: var(--accent-ink); }
 .project-title a { transition: color 0.3s; }
-.project-title a:hover { color: var(--accent); }
+/* Уся картка — посилання на кейс: «розтягуємо» посилання назви на всю картку,
+   кнопки «Демо» і «Код» лежать поверх і працюють окремо */
+.project-link::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+.project-link:focus-visible { outline: none; }
+.project-link:focus-visible::after { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 22px; }
+.project-card:hover .project-title a { color: var(--accent); }
+.project-actions { position: relative; z-index: 2; }
 .project-btn--code { border: 1px solid var(--line); color: var(--fg); }
 .project-btn--code:hover { border-color: var(--fg); }
 

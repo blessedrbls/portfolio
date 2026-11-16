@@ -4,7 +4,9 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { CASES } from './cases-data.mjs';
 
 const SITE = 'https://blessedrbls.github.io/portfolio/';
-const V = 1; // кеш-бастинг для case.css / case.js — збільшуй при змінах
+const V = 2; // кеш-бастинг для case.css — збільшуй при змінах
+// main.js спільний із головною: беремо ту саму версію, що й в index.html
+const MAIN_V = (readFileSync('index.html', 'utf8').match(/main\.js\?v=(\d+)/) || [])[1] || '1';
 
 // PROJECTS беремо прямо з main.js, щоб не дублювати обкладинки, кольори й посилання
 const mainSrc = readFileSync('main.js', 'utf8');
@@ -69,9 +71,9 @@ function page(c, i) {
   const web = p.preview?.url && p.preview.url !== p.demo ? p.preview.url : null;
 
   const links = [
-    p.demo && `<a class="btn btn-primary" href="${esc(p.demo)}" target="_blank" rel="noopener" data-goatcounter-click="case-demo-${c.slug}">${both(isTg ? UI.openTg : UI.openSite)}${arrow}</a>`,
-    web && `<a class="btn" href="${esc(web)}" target="_blank" rel="noopener" data-goatcounter-click="case-web-${c.slug}">${both(UI.openWeb)}${arrow}</a>`,
-    p.code && `<a class="btn" href="${esc(p.code)}" target="_blank" rel="noopener" data-goatcounter-click="case-code-${c.slug}">${both(UI.code)}${arrow}</a>`,
+    p.demo && `<a class="case-btn case-btn-primary" href="${esc(p.demo)}" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-demo-${c.slug}"><span class="magnetic-inner">${both(isTg ? UI.openTg : UI.openSite)}${arrow}</span></a>`,
+    web && `<a class="case-btn" href="${esc(web)}" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-web-${c.slug}"><span class="magnetic-inner">${both(UI.openWeb)}${arrow}</span></a>`,
+    p.code && `<a class="case-btn" href="${esc(p.code)}" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-code-${c.slug}"><span class="magnetic-inner">${both(UI.code)}${arrow}</span></a>`,
   ].filter(Boolean).join('\n          ');
 
   const gallery = c.gallery.map((g) => `
@@ -79,7 +81,7 @@ function page(c, i) {
           const src = `images/cases/${c.slug}/${name}.webp`;
           const [w, h] = webpSize(src);
           return `
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../${src}" data-w="${w}" data-h="${h}" aria-label="${esc(UI.zoom.uk)}: ${esc(alt.uk)}" data-label-uk="${esc(UI.zoom.uk)}: ${esc(alt.uk)}" data-label-en="${esc(UI.zoom.en)}: ${esc(alt.en)}">
               <img src="../../${src}" width="${w}" height="${h}" alt="${esc(alt.uk)}" data-alt-uk="${esc(alt.uk)}" data-alt-en="${esc(alt.en)}" loading="lazy" decoding="async">
             </button>
@@ -89,7 +91,7 @@ function page(c, i) {
         </div>`).join('');
 
   return `<!doctype html>
-<html lang="uk" class="no-js" style="--tint: ${p.tint}">
+<html lang="uk" class="no-js" data-page="case" style="--tint: ${p.tint}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -116,7 +118,10 @@ function page(c, i) {
     (function () {
       var d = document.documentElement;
       d.classList.remove('no-js'); d.classList.add('js');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('reduced');
       try { if (localStorage.getItem('lang') === 'en') d.lang = 'en'; } catch (e) {}
+      // Страховка: якщо скрипти не завантажились — показати перший екран через 3.5 с
+      window.__revealFallback = setTimeout(function () { d.classList.add('reveal-fallback'); }, 3500);
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -124,7 +129,12 @@ function page(c, i) {
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
   <link rel="stylesheet" href="../../case.css?v=${V}">
-  <script defer src="../../case.js?v=${V}"></script>
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script type="module" src="../../main.js?v=${MAIN_V}"></script>
   <script type="application/ld+json">${JSON.stringify({
     '@context': 'https://schema.org', '@type': 'CreativeWork',
     name: c.title.en, alternateName: c.title.uk, description: c.lead.en, url,
@@ -136,6 +146,12 @@ function page(c, i) {
 <body>
   <a class="skip-link" href="#main">${both(UI.skip)}</a>
   <div class="case-glow" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor-ring"><span></span></div>
+    <div class="cursor-dot"></div>
+  </div>
+  <div class="scroll-progress" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
 
   <header class="case-header">
     <a class="logo" href="../../" aria-label="oleksii — home">oleksii<span class="accent">*</span></a>
@@ -149,13 +165,14 @@ function page(c, i) {
 
   <main id="main">
     <section class="case-hero">
-      <p class="case-kicker mono"><span class="tint">${both(p.type)}</span><span>${pad(i + 1)} / ${pad(CASES.length)}</span></p>
-      <h1 class="case-title">${both(c.title)}</h1>
-      <p class="case-lead">${both(c.lead)}</p>
-      <div class="case-actions">
+      <canvas class="hero-canvas" aria-hidden="true"></canvas>
+      <p class="case-kicker mono intro"><span class="tint">${both(p.type)}</span><span>${pad(i + 1)} / ${pad(CASES.length)}</span></p>
+      <h1 class="case-title" data-split-case>${both(c.title)}</h1>
+      <p class="case-lead intro">${both(c.lead)}</p>
+      <div class="case-actions intro">
           ${links}
       </div>
-      <dl class="case-meta">
+      <dl class="case-meta intro">
         <div><dt class="mono">${both(UI.role)}</dt><dd>${both(c.role)}</dd></div>
         <div><dt class="mono">${both(UI.year)}</dt><dd>${esc(c.year)}</dd></div>
         <div><dt class="mono">${both(UI.format)}</dt><dd>${both(UI.formatVal)}</dd></div>
@@ -163,62 +180,62 @@ function page(c, i) {
       </dl>
     </section>
 
-    <figure class="case-cover reveal">
+    <figure class="case-cover">
       <img src="../../${esc(cover)}" srcset="../../${esc(cover.replace('.webp', '-1000.webp'))} 1000w, ../../${esc(cover)} 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="${cw}" height="${ch}" alt="" fetchpriority="high">
     </figure>
 
-    <section class="case-block reveal" aria-labelledby="h-task">
+    <section class="case-block" id="s-task" aria-labelledby="h-task">
       <h2 class="block-label mono" id="h-task"><span class="num">01</span>${both(UI.task)}</h2>
       <p class="case-statement">${both(c.task)}</p>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-flow">
+    <section class="case-block" id="s-flow" aria-labelledby="h-flow">
       <h2 class="block-label mono" id="h-flow"><span class="num">02</span>${both(UI.flow)}</h2>
       <ol class="flow">${c.flow.map((s, k) => `
-        <li class="reveal"><span class="flow-num mono">${pad(k + 1)}</span><p>${both(s)}</p></li>`).join('')}
+        <li><span class="flow-bar" aria-hidden="true"></span>${k === c.flow.length - 1 ? '<span class="flow-bar flow-bar--end" aria-hidden="true"></span>' : ''}<span class="flow-num mono">${pad(k + 1)}</span><p>${both(s)}</p></li>`).join('')}
       </ol>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-solution">
+    <section class="case-block" id="s-solution" aria-labelledby="h-solution">
       <h2 class="block-label mono" id="h-solution"><span class="num">03</span>${both(UI.solution)}</h2>
       <div class="features">${c.features.map((f) => `
-        <div class="feature-col reveal">
+        <div class="feature-col">
           <h3>${both(f.title)}</h3>
           <ul>${f.items.map((it) => `<li>${both(it)}</li>`).join('')}</ul>
         </div>`).join('')}
       </div>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-details">
+    <section class="case-block" id="s-details" aria-labelledby="h-details">
       <h2 class="block-label mono" id="h-details"><span class="num">04</span>${both(UI.details)}</h2>
       <div class="details">${c.details.map((d) => `
-        <article class="detail reveal">
+        <article class="detail">
           <h3>${both(d.title)}</h3>
           <p>${both(d.text)}</p>
         </article>`).join('')}
       </div>
     </section>
 
-    <section class="case-block case-gallery" aria-labelledby="h-gallery">
-      <h2 class="block-label mono reveal" id="h-gallery"><span class="num">05</span>${both(UI.gallery)}</h2>${gallery}
+    <section class="case-block case-gallery" id="s-gallery" aria-labelledby="h-gallery">
+      <h2 class="block-label mono" id="h-gallery"><span class="num">05</span>${both(UI.gallery)}</h2>${gallery}
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-benefits">
+    <section class="case-block" id="s-benefits" aria-labelledby="h-benefits">
       <h2 class="block-label mono" id="h-benefits"><span class="num">06</span>${both(UI.benefits)}</h2>
       <ul class="benefits">${c.benefits.map((b) => `
-        <li>${both(b)}</li>`).join('')}
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text">${both(b)}</span></li>`).join('')}
       </ul>
     </section>
 
-    <a class="case-next reveal" href="../${next.slug}/" style="--next-tint: ${nextP.tint}">
+    <a class="case-next" href="../${next.slug}/" style="--next-tint: ${nextP.tint}" data-tint="${nextP.tint}" data-cursor>
       <span class="mono">${both(UI.next)}</span>
-      <span class="case-next-title">${both(next.title)}${arrow}</span>
+      <span class="case-next-title"><span class="case-next-name" data-split-case>${both(next.title)}</span>${arrow}</span>
     </a>
 
-    <section class="case-cta reveal">
-      <h2 class="cta-title"><span data-l="uk">${accentText(UI.ctaTitle.uk)}</span><span data-l="en">${accentText(UI.ctaTitle.en)}</span></h2>
+    <section class="case-cta">
+      <h2 class="cta-title" data-split-case><span data-l="uk">${accentText(UI.ctaTitle.uk)}</span><span data-l="en">${accentText(UI.ctaTitle.en)}</span></h2>
       <p>${both(UI.ctaText)}</p>
-      <a class="btn btn-primary btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-goatcounter-click="case-telegram-${c.slug}">${both(UI.ctaBtn)}${arrow}</a>
+      <a class="case-btn case-btn-primary case-btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-magnetic="0.35" data-goatcounter-click="case-telegram-${c.slug}"><span class="magnetic-inner">${both(UI.ctaBtn)}${arrow}</span></a>
     </section>
   </main>
 

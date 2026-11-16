@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk" class="no-js" style="--tint: #d4b05a">
+<html lang="uk" class="no-js" data-page="case" style="--tint: #d4b05a">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -26,20 +26,34 @@
     (function () {
       var d = document.documentElement;
       d.classList.remove('no-js'); d.classList.add('js');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('reduced');
       try { if (localStorage.getItem('lang') === 'en') d.lang = 'en'; } catch (e) {}
+      // Страховка: якщо скрипти не завантажились — показати перший екран через 3.5 с
+      window.__revealFallback = setTimeout(function () { d.classList.add('reveal-fallback'); }, 3500);
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
-  <link rel="stylesheet" href="../../case.css?v=1">
-  <script defer src="../../case.js?v=1"></script>
+  <link rel="stylesheet" href="../../case.css?v=2">
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script type="module" src="../../main.js?v=52"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"CreativeWork","name":"Barbershop website","alternateName":"Сайт барбершопу","description":"A website that does more than present a barbershop: it books clients, shows each barber’s free time, prevents double bookings and sends requests to the admins in Telegram.","url":"https://blessedrbls.github.io/portfolio/work/barbershop-site/","image":"https://blessedrbls.github.io/portfolio/images/barbershop-site.webp","dateCreated":"2026","keywords":"HTML, CSS, JavaScript, Cloudflare Workers, Cloudflare D1, Telegram Bot API","author":{"@type":"Person","name":"Oleksii","url":"https://blessedrbls.github.io/portfolio/"},"codeRepository":"https://github.com/blessedrbls/barbershop-site"}</script>
 </head>
 <body>
   <a class="skip-link" href="#main"><span data-l="uk">Перейти до змісту</span><span data-l="en">Skip to content</span></a>
   <div class="case-glow" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor-ring"><span></span></div>
+    <div class="cursor-dot"></div>
+  </div>
+  <div class="scroll-progress" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
 
   <header class="case-header">
     <a class="logo" href="../../" aria-label="oleksii — home">oleksii<span class="accent">*</span></a>
@@ -53,14 +67,15 @@
 
   <main id="main">
     <section class="case-hero">
-      <p class="case-kicker mono"><span class="tint"><span data-l="uk">Сайт</span><span data-l="en">Website</span></span><span>03 / 05</span></p>
-      <h1 class="case-title"><span data-l="uk">Сайт барбершопу</span><span data-l="en">Barbershop website</span></h1>
-      <p class="case-lead"><span data-l="uk">Сайт, що не лише презентує барбершоп, а й записує клієнтів: показує вільний час кожного майстра, не допускає подвійних бронювань і надсилає заявки адмінам у Telegram.</span><span data-l="en">A website that does more than present a barbershop: it books clients, shows each barber’s free time, prevents double bookings and sends requests to the admins in Telegram.</span></p>
-      <div class="case-actions">
-          <a class="btn btn-primary" href="https://blessedrbls.github.io/barbershop-site/" target="_blank" rel="noopener" data-goatcounter-click="case-demo-barbershop-site"><span data-l="uk">Відкрити сайт</span><span data-l="en">Open the site</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
-          <a class="btn" href="https://github.com/blessedrbls/barbershop-site" target="_blank" rel="noopener" data-goatcounter-click="case-code-barbershop-site"><span data-l="uk">Код на GitHub</span><span data-l="en">Code on GitHub</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+      <canvas class="hero-canvas" aria-hidden="true"></canvas>
+      <p class="case-kicker mono intro"><span class="tint"><span data-l="uk">Сайт</span><span data-l="en">Website</span></span><span>03 / 05</span></p>
+      <h1 class="case-title" data-split-case><span data-l="uk">Сайт барбершопу</span><span data-l="en">Barbershop website</span></h1>
+      <p class="case-lead intro"><span data-l="uk">Сайт, що не лише презентує барбершоп, а й записує клієнтів: показує вільний час кожного майстра, не допускає подвійних бронювань і надсилає заявки адмінам у Telegram.</span><span data-l="en">A website that does more than present a barbershop: it books clients, shows each barber’s free time, prevents double bookings and sends requests to the admins in Telegram.</span></p>
+      <div class="case-actions intro">
+          <a class="case-btn case-btn-primary" href="https://blessedrbls.github.io/barbershop-site/" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-demo-barbershop-site"><span class="magnetic-inner"><span data-l="uk">Відкрити сайт</span><span data-l="en">Open the site</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
+          <a class="case-btn" href="https://github.com/blessedrbls/barbershop-site" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-code-barbershop-site"><span class="magnetic-inner"><span data-l="uk">Код на GitHub</span><span data-l="en">Code on GitHub</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
       </div>
-      <dl class="case-meta">
+      <dl class="case-meta intro">
         <div><dt class="mono"><span data-l="uk">Роль</span><span data-l="en">Role</span></dt><dd><span data-l="uk">Дизайн, верстка, бекенд</span><span data-l="en">Design, front end, back end</span></dd></div>
         <div><dt class="mono"><span data-l="uk">Рік</span><span data-l="en">Year</span></dt><dd>2026</dd></div>
         <div><dt class="mono"><span data-l="uk">Формат</span><span data-l="en">Format</span></dt><dd><span data-l="uk">Демо-проєкт для портфоліо</span><span data-l="en">Portfolio demo project</span></dd></div>
@@ -68,67 +83,67 @@
       </dl>
     </section>
 
-    <figure class="case-cover reveal">
+    <figure class="case-cover">
       <img src="../../images/barbershop-site.webp" srcset="../../images/barbershop-site-1000.webp 1000w, ../../images/barbershop-site.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="1000" alt="" fetchpriority="high">
     </figure>
 
-    <section class="case-block reveal" aria-labelledby="h-task">
+    <section class="case-block" id="s-task" aria-labelledby="h-task">
       <h2 class="block-label mono" id="h-task"><span class="num">01</span><span data-l="uk">Задача</span><span data-l="en">The task</span></h2>
       <p class="case-statement"><span data-l="uk">Барбершопу з двома філіями потрібен сайт, який за кілька секунд передає атмосферу, показує послуги, ціни й майстрів — і дає записатися, не дзвонячи, з гарантією, що обраний час справді вільний.</span><span data-l="en">A barbershop with two locations needs a site that conveys its atmosphere in seconds, shows services, prices and barbers, and lets people book without calling, knowing the chosen time is really free.</span></p>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-flow">
+    <section class="case-block" id="s-flow" aria-labelledby="h-flow">
       <h2 class="block-label mono" id="h-flow"><span class="num">02</span><span data-l="uk">Як це працює</span><span data-l="en">How it works</span></h2>
       <ol class="flow">
-        <li class="reveal"><span class="flow-num mono">01</span><p><span data-l="uk">Клієнт обирає послугу, майстра (або «будь-який»), філію, день на 2 тижні вперед і вільну годину.</span><span data-l="en">The client picks a service, a barber (or “any”), a location, a day up to two weeks ahead and a free hour.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">02</span><p><span data-l="uk">Cloudflare Worker перевіряє дані й зберігає запис у базі D1.</span><span data-l="en">A Cloudflare Worker validates the data and stores the booking in a D1 database.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">03</span><p><span data-l="uk">Заявка миттєво приходить у Telegram-групу адмінів з кнопками ✅ Підтвердити / ❌ Скасувати.</span><span data-l="en">The request lands instantly in the admins’ Telegram group with ✅ Confirm / ❌ Cancel buttons.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">04</span><p><span data-l="uk">Скасування в Telegram одразу звільняє час на сайті.</span><span data-l="en">Cancelling in Telegram frees the time on the site right away.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">01</span><p><span data-l="uk">Клієнт обирає послугу, майстра (або «будь-який»), філію, день на 2 тижні вперед і вільну годину.</span><span data-l="en">The client picks a service, a barber (or “any”), a location, a day up to two weeks ahead and a free hour.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">02</span><p><span data-l="uk">Cloudflare Worker перевіряє дані й зберігає запис у базі D1.</span><span data-l="en">A Cloudflare Worker validates the data and stores the booking in a D1 database.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">03</span><p><span data-l="uk">Заявка миттєво приходить у Telegram-групу адмінів з кнопками ✅ Підтвердити / ❌ Скасувати.</span><span data-l="en">The request lands instantly in the admins’ Telegram group with ✅ Confirm / ❌ Cancel buttons.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-bar flow-bar--end" aria-hidden="true"></span><span class="flow-num mono">04</span><p><span data-l="uk">Скасування в Telegram одразу звільняє час на сайті.</span><span data-l="en">Cancelling in Telegram frees the time on the site right away.</span></p></li>
       </ol>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-solution">
+    <section class="case-block" id="s-solution" aria-labelledby="h-solution">
       <h2 class="block-label mono" id="h-solution"><span class="num">03</span><span data-l="uk">Що зроблено</span><span data-l="en">What was built</span></h2>
       <div class="features">
-        <div class="feature-col reveal">
+        <div class="feature-col">
           <h3><span data-l="uk">Сайт</span><span data-l="en">Website</span></h3>
           <ul><li><span data-l="uk">Темний дизайн із золотим акцентом, анімації появи при скролі</span><span data-l="en">Dark design with a gold accent and scroll fade-ins</span></li><li><span data-l="uk">Послуги й ціни, команда майстрів, галерея з лайтбоксом, відгуки</span><span data-l="en">Services and prices, the team, a gallery with a lightbox, reviews</span></li><li><span data-l="uk">Карта, що перемикається між двома філіями</span><span data-l="en">A map that switches between the two locations</span></li><li><span data-l="uk">Українська й англійська, адаптив під телефон, планшет і ПК</span><span data-l="en">Ukrainian and English, responsive for phone, tablet and desktop</span></li></ul>
         </div>
-        <div class="feature-col reveal">
+        <div class="feature-col">
           <h3><span data-l="uk">Онлайн-запис</span><span data-l="en">Online booking</span></h3>
           <ul><li><span data-l="uk">Слоти з урахуванням годин роботи, тривалості послуги й київського часу</span><span data-l="en">Slots follow opening hours, service length and Kyiv time</span></li><li><span data-l="uk">«Будь-який майстер» призначає найменш завантаженого</span><span data-l="en">“Any barber” assigns the least busy one</span></li><li><span data-l="uk">Кнопки підтвердження й скасування прямо в Telegram</span><span data-l="en">Confirm and cancel buttons right in Telegram</span></li></ul>
         </div>
       </div>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-details">
+    <section class="case-block" id="s-details" aria-labelledby="h-details">
       <h2 class="block-label mono" id="h-details"><span class="num">04</span><span data-l="uk">Цікаві рішення</span><span data-l="en">Under the hood</span></h2>
       <div class="details">
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Подвійний запис неможливий</span><span data-l="en">Double booking is impossible</span></h3>
           <p><span data-l="uk">Унікальність слота гарантує сама база D1: двоє людей не займуть одного майстра на той самий час, навіть натиснувши кнопку одночасно.</span><span data-l="en">The D1 database itself guarantees each slot is unique, so two people cannot book the same barber at the same time, even if they press the button together.</span></p>
         </article>
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Токен бота не потрапляє на сайт</span><span data-l="en">The bot token never reaches the site</span></h3>
           <p><span data-l="uk">Сайт говорить лише з Worker-ом; токен і чат зберігаються як секрети на сервері. Worker приймає запити тільки з дозволених адрес і перевіряє кожне поле.</span><span data-l="en">The site only talks to the Worker; the token and chat id live as server-side secrets. The Worker accepts requests only from allowed origins and validates every field.</span></p>
         </article>
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Без серверів і збірки</span><span data-l="en">No servers, no build step</span></h3>
           <p><span data-l="uk">Статичний сайт на GitHub Pages плюс безсерверний Worker — хостинг майже нічого не коштує й не потребує підтримки.</span><span data-l="en">A static site on GitHub Pages plus a serverless Worker: hosting costs next to nothing and needs no maintenance.</span></p>
         </article>
       </div>
     </section>
 
-    <section class="case-block case-gallery" aria-labelledby="h-gallery">
-      <h2 class="block-label mono reveal" id="h-gallery"><span class="num">05</span><span data-l="uk">Скриншоти</span><span data-l="en">Screenshots</span></h2>
+    <section class="case-block case-gallery" id="s-gallery" aria-labelledby="h-gallery">
+      <h2 class="block-label mono" id="h-gallery"><span class="num">05</span><span data-l="uk">Скриншоти</span><span data-l="en">Screenshots</span></h2>
         <div class="gallery gallery-wide">
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/barbershop-site/desktop.webp" data-w="1400" data-h="875" aria-label="Збільшити: Головний екран" data-label-uk="Збільшити: Головний екран" data-label-en="Enlarge: Hero section">
               <img src="../../images/cases/barbershop-site/desktop.webp" width="1400" height="875" alt="Головний екран" data-alt-uk="Головний екран" data-alt-en="Hero section" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Головний екран</span><span data-l="en">Hero section</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/barbershop-site/booking.webp" data-w="1400" data-h="875" aria-label="Збільшити: Запис: лише вільні години майстра" data-label-uk="Збільшити: Запис: лише вільні години майстра" data-label-en="Enlarge: Booking: only the barber’s free hours">
               <img src="../../images/cases/barbershop-site/booking.webp" width="1400" height="875" alt="Запис: лише вільні години майстра" data-alt-uk="Запис: лише вільні години майстра" data-alt-en="Booking: only the barber’s free hours" loading="lazy" decoding="async">
             </button>
@@ -136,13 +151,13 @@
           </figure>
         </div>
         <div class="gallery gallery-phones">
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/barbershop-site/mobile.webp" data-w="600" data-h="1299" aria-label="Збільшити: Головний екран на телефоні" data-label-uk="Збільшити: Головний екран на телефоні" data-label-en="Enlarge: Hero on a phone">
               <img src="../../images/cases/barbershop-site/mobile.webp" width="600" height="1299" alt="Головний екран на телефоні" data-alt-uk="Головний екран на телефоні" data-alt-en="Hero on a phone" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Головний екран на телефоні</span><span data-l="en">Hero on a phone</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/barbershop-site/mobile-booking.webp" data-w="600" data-h="1299" aria-label="Збільшити: Запис на телефоні" data-label-uk="Збільшити: Запис на телефоні" data-label-en="Enlarge: Booking on a phone">
               <img src="../../images/cases/barbershop-site/mobile-booking.webp" width="600" height="1299" alt="Запис на телефоні" data-alt-uk="Запис на телефоні" data-alt-en="Booking on a phone" loading="lazy" decoding="async">
             </button>
@@ -151,24 +166,24 @@
         </div>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-benefits">
+    <section class="case-block" id="s-benefits" aria-labelledby="h-benefits">
       <h2 class="block-label mono" id="h-benefits"><span class="num">06</span><span data-l="uk">Що це дає бізнесу</span><span data-l="en">What it gives the business</span></h2>
       <ul class="benefits">
-        <li><span data-l="uk">Клієнти записуються самі в будь-який час</span><span data-l="en">Clients book themselves at any time</span></li>
-        <li><span data-l="uk">Адміністратор підтверджує записи в Telegram, не відкриваючи жодних панелей</span><span data-l="en">The admin confirms bookings in Telegram without opening any dashboard</span></li>
-        <li><span data-l="uk">Накладки в розкладі виключені технічно</span><span data-l="en">Schedule clashes are ruled out technically</span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Клієнти записуються самі в будь-який час</span><span data-l="en">Clients book themselves at any time</span></span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Адміністратор підтверджує записи в Telegram, не відкриваючи жодних панелей</span><span data-l="en">The admin confirms bookings in Telegram without opening any dashboard</span></span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Накладки в розкладі виключені технічно</span><span data-l="en">Schedule clashes are ruled out technically</span></span></li>
       </ul>
     </section>
 
-    <a class="case-next reveal" href="../landing-course/" style="--next-tint: #4c7dff">
+    <a class="case-next" href="../landing-course/" style="--next-tint: #4c7dff" data-tint="#4c7dff" data-cursor>
       <span class="mono"><span data-l="uk">Наступний проєкт</span><span data-l="en">Next project</span></span>
-      <span class="case-next-title"><span data-l="uk">Лендінг онлайн-курсу</span><span data-l="en">Online course landing page</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+      <span class="case-next-title"><span class="case-next-name" data-split-case><span data-l="uk">Лендінг онлайн-курсу</span><span data-l="en">Online course landing page</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
     </a>
 
-    <section class="case-cta reveal">
-      <h2 class="cta-title"><span data-l="uk">Потрібно щось <span class="accent">схоже</span>?</span><span data-l="en">Need something <span class="accent">like this</span>?</span></h2>
+    <section class="case-cta">
+      <h2 class="cta-title" data-split-case><span data-l="uk">Потрібно щось <span class="accent">схоже</span>?</span><span data-l="en">Need something <span class="accent">like this</span>?</span></h2>
       <p><span data-l="uk">Напишіть у Telegram — обговоримо задачу й терміни.</span><span data-l="en">Message me on Telegram and we’ll talk about your task and timeline.</span></p>
-      <a class="btn btn-primary btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-goatcounter-click="case-telegram-barbershop-site"><span data-l="uk">Написати в Telegram</span><span data-l="en">Message on Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+      <a class="case-btn case-btn-primary case-btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-magnetic="0.35" data-goatcounter-click="case-telegram-barbershop-site"><span class="magnetic-inner"><span data-l="uk">Написати в Telegram</span><span data-l="en">Message on Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
     </section>
   </main>
 

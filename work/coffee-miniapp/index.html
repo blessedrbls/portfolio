@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk" class="no-js" style="--tint: #d9a066">
+<html lang="uk" class="no-js" data-page="case" style="--tint: #d9a066">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -26,20 +26,34 @@
     (function () {
       var d = document.documentElement;
       d.classList.remove('no-js'); d.classList.add('js');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) d.classList.add('reduced');
       try { if (localStorage.getItem('lang') === 'en') d.lang = 'en'; } catch (e) {}
+      // Страховка: якщо скрипти не завантажились — показати перший екран через 3.5 с
+      window.__revealFallback = setTimeout(function () { d.classList.add('reveal-fallback'); }, 3500);
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
-  <link rel="stylesheet" href="../../case.css?v=1">
-  <script defer src="../../case.js?v=1"></script>
+  <link rel="stylesheet" href="../../case.css?v=2">
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
+  <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script type="module" src="../../main.js?v=52"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"CreativeWork","name":"Coffee shop Telegram Mini App","alternateName":"Telegram Mini App для кав'ярні","description":"Menu, cart and pickup orders right inside Telegram, with no separate app and no phone calls. The barista gets each order in a bot and updates its status with one tap.","url":"https://blessedrbls.github.io/portfolio/work/coffee-miniapp/","image":"https://blessedrbls.github.io/portfolio/images/coffee-miniapp.webp","dateCreated":"2026","keywords":"HTML, CSS, JavaScript, Telegram Web Apps API, Python, aiogram 3, SQLite, GitHub Pages","author":{"@type":"Person","name":"Oleksii","url":"https://blessedrbls.github.io/portfolio/"},"codeRepository":"https://github.com/blessedrbls/coffee-miniapp"}</script>
 </head>
 <body>
   <a class="skip-link" href="#main"><span data-l="uk">Перейти до змісту</span><span data-l="en">Skip to content</span></a>
   <div class="case-glow" aria-hidden="true"></div>
+  <div class="cursor" aria-hidden="true">
+    <div class="cursor-ring"><span></span></div>
+    <div class="cursor-dot"></div>
+  </div>
+  <div class="scroll-progress" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
 
   <header class="case-header">
     <a class="logo" href="../../" aria-label="oleksii — home">oleksii<span class="accent">*</span></a>
@@ -53,15 +67,16 @@
 
   <main id="main">
     <section class="case-hero">
-      <p class="case-kicker mono"><span class="tint"><span data-l="uk">Mini App</span><span data-l="en">Mini App</span></span><span>01 / 05</span></p>
-      <h1 class="case-title"><span data-l="uk">Telegram Mini App для кав'ярні</span><span data-l="en">Coffee shop Telegram Mini App</span></h1>
-      <p class="case-lead"><span data-l="uk">Меню, кошик і замовлення на самовивіз прямо в Telegram — без окремого застосунку та дзвінків. Бариста отримує замовлення в бот і змінює статус одним дотиком.</span><span data-l="en">Menu, cart and pickup orders right inside Telegram, with no separate app and no phone calls. The barista gets each order in a bot and updates its status with one tap.</span></p>
-      <div class="case-actions">
-          <a class="btn btn-primary" href="https://t.me/coffee_miniapp_bot_bot" target="_blank" rel="noopener" data-goatcounter-click="case-demo-coffee-miniapp"><span data-l="uk">Відкрити в Telegram</span><span data-l="en">Open in Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
-          <a class="btn" href="https://blessedrbls.github.io/coffee-miniapp/" target="_blank" rel="noopener" data-goatcounter-click="case-web-coffee-miniapp"><span data-l="uk">Веб-демо</span><span data-l="en">Web demo</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
-          <a class="btn" href="https://github.com/blessedrbls/coffee-miniapp" target="_blank" rel="noopener" data-goatcounter-click="case-code-coffee-miniapp"><span data-l="uk">Код на GitHub</span><span data-l="en">Code on GitHub</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+      <canvas class="hero-canvas" aria-hidden="true"></canvas>
+      <p class="case-kicker mono intro"><span class="tint"><span data-l="uk">Mini App</span><span data-l="en">Mini App</span></span><span>01 / 05</span></p>
+      <h1 class="case-title" data-split-case><span data-l="uk">Telegram Mini App для кав'ярні</span><span data-l="en">Coffee shop Telegram Mini App</span></h1>
+      <p class="case-lead intro"><span data-l="uk">Меню, кошик і замовлення на самовивіз прямо в Telegram — без окремого застосунку та дзвінків. Бариста отримує замовлення в бот і змінює статус одним дотиком.</span><span data-l="en">Menu, cart and pickup orders right inside Telegram, with no separate app and no phone calls. The barista gets each order in a bot and updates its status with one tap.</span></p>
+      <div class="case-actions intro">
+          <a class="case-btn case-btn-primary" href="https://t.me/coffee_miniapp_bot_bot" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-demo-coffee-miniapp"><span class="magnetic-inner"><span data-l="uk">Відкрити в Telegram</span><span data-l="en">Open in Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
+          <a class="case-btn" href="https://blessedrbls.github.io/coffee-miniapp/" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-web-coffee-miniapp"><span class="magnetic-inner"><span data-l="uk">Веб-демо</span><span data-l="en">Web demo</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
+          <a class="case-btn" href="https://github.com/blessedrbls/coffee-miniapp" target="_blank" rel="noopener" data-magnetic="0.3" data-goatcounter-click="case-code-coffee-miniapp"><span class="magnetic-inner"><span data-l="uk">Код на GitHub</span><span data-l="en">Code on GitHub</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
       </div>
-      <dl class="case-meta">
+      <dl class="case-meta intro">
         <div><dt class="mono"><span data-l="uk">Роль</span><span data-l="en">Role</span></dt><dd><span data-l="uk">Дизайн, Mini App, бот</span><span data-l="en">Design, Mini App, bot</span></dd></div>
         <div><dt class="mono"><span data-l="uk">Рік</span><span data-l="en">Year</span></dt><dd>2026</dd></div>
         <div><dt class="mono"><span data-l="uk">Формат</span><span data-l="en">Format</span></dt><dd><span data-l="uk">Демо-проєкт для портфоліо</span><span data-l="en">Portfolio demo project</span></dd></div>
@@ -69,91 +84,91 @@
       </dl>
     </section>
 
-    <figure class="case-cover reveal">
+    <figure class="case-cover">
       <img src="../../images/coffee-miniapp.webp" srcset="../../images/coffee-miniapp-1000.webp 1000w, ../../images/coffee-miniapp.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="1000" alt="" fetchpriority="high">
     </figure>
 
-    <section class="case-block reveal" aria-labelledby="h-task">
+    <section class="case-block" id="s-task" aria-labelledby="h-task">
       <h2 class="block-label mono" id="h-task"><span class="num">01</span><span data-l="uk">Задача</span><span data-l="en">The task</span></h2>
       <p class="case-statement"><span data-l="uk">Кав'ярні потрібен простий спосіб приймати замовлення на самовивіз: щоб гість зібрав замовлення за хвилину там, де він і так проводить час, а бариста одразу бачив, що готувати, і не губив замовлення в переписках.</span><span data-l="en">A coffee shop needs a simple way to take pickup orders: guests should be able to order in a minute in an app they already use, and the barista should see right away what to make without losing orders in chats.</span></p>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-flow">
+    <section class="case-block" id="s-flow" aria-labelledby="h-flow">
       <h2 class="block-label mono" id="h-flow"><span class="num">02</span><span data-l="uk">Як це працює</span><span data-l="en">How it works</span></h2>
       <ol class="flow">
-        <li class="reveal"><span class="flow-num mono">01</span><p><span data-l="uk">Гість натискає «Відкрити меню» в боті — Mini App відкривається всередині Telegram.</span><span data-l="en">The guest taps “Open menu” in the bot and the Mini App opens inside Telegram.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">02</span><p><span data-l="uk">Обирає напої й десерти, перевіряє кошик, вказує ім’я, телефон і час самовивозу.</span><span data-l="en">They pick drinks and desserts, review the cart and enter a name, phone number and pickup time.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">03</span><p><span data-l="uk">Бот перевіряє кожне поле й сам перераховує суму за власним прайсом.</span><span data-l="en">The bot validates every field and recalculates the total from its own price list.</span></p></li>
-        <li class="reveal"><span class="flow-num mono">04</span><p><span data-l="uk">Бариста отримує картку замовлення з кнопками «Прийнято / Готово / Скасовано», а гість — сповіщення про кожен статус.</span><span data-l="en">The barista gets an order card with Accepted / Ready / Cancelled buttons, and the guest is notified about every status.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">01</span><p><span data-l="uk">Гість натискає «Відкрити меню» в боті — Mini App відкривається всередині Telegram.</span><span data-l="en">The guest taps “Open menu” in the bot and the Mini App opens inside Telegram.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">02</span><p><span data-l="uk">Обирає напої й десерти, перевіряє кошик, вказує ім’я, телефон і час самовивозу.</span><span data-l="en">They pick drinks and desserts, review the cart and enter a name, phone number and pickup time.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-num mono">03</span><p><span data-l="uk">Бот перевіряє кожне поле й сам перераховує суму за власним прайсом.</span><span data-l="en">The bot validates every field and recalculates the total from its own price list.</span></p></li>
+        <li><span class="flow-bar" aria-hidden="true"></span><span class="flow-bar flow-bar--end" aria-hidden="true"></span><span class="flow-num mono">04</span><p><span data-l="uk">Бариста отримує картку замовлення з кнопками «Прийнято / Готово / Скасовано», а гість — сповіщення про кожен статус.</span><span data-l="en">The barista gets an order card with Accepted / Ready / Cancelled buttons, and the guest is notified about every status.</span></p></li>
       </ol>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-solution">
+    <section class="case-block" id="s-solution" aria-labelledby="h-solution">
       <h2 class="block-label mono" id="h-solution"><span class="num">03</span><span data-l="uk">Що зроблено</span><span data-l="en">What was built</span></h2>
       <div class="features">
-        <div class="feature-col reveal">
+        <div class="feature-col">
           <h3><span data-l="uk">Для гостя</span><span data-l="en">For guests</span></h3>
           <ul><li><span data-l="uk">Категорії, фото товарів, кнопки +/− і кошик, що зберігається між сесіями</span><span data-l="en">Categories, product photos, +/− buttons and a cart that survives between sessions</span></li><li><span data-l="uk">Кольори теми Telegram, світлий і темний режим</span><span data-l="en">Telegram theme colours, light and dark mode</span></li><li><span data-l="uk">Нативні MainButton і BackButton, вібровідгук при додаванні в кошик</span><span data-l="en">Native MainButton and BackButton, haptic feedback when adding to cart</span></li><li><span data-l="uk">Українська та англійська — за мовою Telegram</span><span data-l="en">Ukrainian and English, picked from the Telegram language</span></li></ul>
         </div>
-        <div class="feature-col reveal">
+        <div class="feature-col">
           <h3><span data-l="uk">Для кав’ярні</span><span data-l="en">For the coffee shop</span></h3>
           <ul><li><span data-l="uk">Картка замовлення з кнопками статусів, зручна для кількох адміністраторів</span><span data-l="en">Order cards with status buttons, safe for several admins</span></li><li><span data-l="uk">Слоти самовивозу за годинами роботи</span><span data-l="en">Pickup time slots based on opening hours</span></li><li><span data-l="uk">Замовлення в SQLite — кнопки працюють і після перезапуску</span><span data-l="en">Orders stored in SQLite, so buttons keep working after a restart</span></li></ul>
         </div>
       </div>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-details">
+    <section class="case-block" id="s-details" aria-labelledby="h-details">
       <h2 class="block-label mono" id="h-details"><span class="num">04</span><span data-l="uk">Цікаві рішення</span><span data-l="en">Under the hood</span></h2>
       <div class="details">
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Ціни не беруться з телефона</span><span data-l="en">Prices never come from the phone</span></h3>
           <p><span data-l="uk">Mini App надсилає лише id товарів і кількість. Суму рахує бот за своїм прайсом і позначає замовлення, де вона не збіглася — підробити ціну не вийде.</span><span data-l="en">The Mini App only sends product ids and quantities. The bot calculates the total from its own price list and flags orders where it does not match, so prices cannot be tampered with.</span></p>
         </article>
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Відчувається як частина Telegram</span><span data-l="en">Feels like part of Telegram</span></h3>
           <p><span data-l="uk">Тема, кнопки й вібрація беруться з Telegram, тому застосунок не виглядає «вбудованим сайтом».</span><span data-l="en">Theme, buttons and haptics come from Telegram itself, so the app does not feel like an embedded website.</span></p>
         </article>
-        <article class="detail reveal">
+        <article class="detail">
           <h3><span data-l="uk">Демо-режим у браузері</span><span data-l="en">Demo mode in the browser</span></h3>
           <p><span data-l="uk">Поза Telegram з’являються власні кнопки, перемикачі мови й теми — проєкт можна показати будь-кому за посиланням.</span><span data-l="en">Outside Telegram it shows its own buttons plus language and theme toggles, so anyone can try it from a link.</span></p>
         </article>
       </div>
     </section>
 
-    <section class="case-block case-gallery" aria-labelledby="h-gallery">
-      <h2 class="block-label mono reveal" id="h-gallery"><span class="num">05</span><span data-l="uk">Скриншоти</span><span data-l="en">Screenshots</span></h2>
+    <section class="case-block case-gallery" id="s-gallery" aria-labelledby="h-gallery">
+      <h2 class="block-label mono" id="h-gallery"><span class="num">05</span><span data-l="uk">Скриншоти</span><span data-l="en">Screenshots</span></h2>
         <div class="gallery gallery-phones">
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/coffee-miniapp/menu.webp" data-w="600" data-h="1299" aria-label="Збільшити: Меню з категоріями" data-label-uk="Збільшити: Меню з категоріями" data-label-en="Enlarge: Menu with categories">
               <img src="../../images/cases/coffee-miniapp/menu.webp" width="600" height="1299" alt="Меню з категоріями" data-alt-uk="Меню з категоріями" data-alt-en="Menu with categories" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Меню з категоріями</span><span data-l="en">Menu with categories</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/coffee-miniapp/products.webp" data-w="600" data-h="1299" aria-label="Збільшити: Список товарів з кнопками +/−" data-label-uk="Збільшити: Список товарів з кнопками +/−" data-label-en="Enlarge: Product list with +/− buttons">
               <img src="../../images/cases/coffee-miniapp/products.webp" width="600" height="1299" alt="Список товарів з кнопками +/−" data-alt-uk="Список товарів з кнопками +/−" data-alt-en="Product list with +/− buttons" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Список товарів з кнопками +/−</span><span data-l="en">Product list with +/− buttons</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/coffee-miniapp/cart.webp" data-w="600" data-h="1299" aria-label="Збільшити: Кошик із сумою" data-label-uk="Збільшити: Кошик із сумою" data-label-en="Enlarge: Cart with total">
               <img src="../../images/cases/coffee-miniapp/cart.webp" width="600" height="1299" alt="Кошик із сумою" data-alt-uk="Кошик із сумою" data-alt-en="Cart with total" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Кошик із сумою</span><span data-l="en">Cart with total</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/coffee-miniapp/checkout.webp" data-w="600" data-h="1299" aria-label="Збільшити: Оформлення замовлення" data-label-uk="Збільшити: Оформлення замовлення" data-label-en="Enlarge: Checkout form">
               <img src="../../images/cases/coffee-miniapp/checkout.webp" width="600" height="1299" alt="Оформлення замовлення" data-alt-uk="Оформлення замовлення" data-alt-en="Checkout form" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Оформлення замовлення</span><span data-l="en">Checkout form</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/coffee-miniapp/confirm.webp" data-w="600" data-h="1299" aria-label="Збільшити: Перевірка перед відправкою" data-label-uk="Збільшити: Перевірка перед відправкою" data-label-en="Enlarge: Order review before sending">
               <img src="../../images/cases/coffee-miniapp/confirm.webp" width="600" height="1299" alt="Перевірка перед відправкою" data-alt-uk="Перевірка перед відправкою" data-alt-en="Order review before sending" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Перевірка перед відправкою</span><span data-l="en">Order review before sending</span></figcaption>
           </figure>
-          <figure class="shot reveal">
+          <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/coffee-miniapp/dark-theme.webp" data-w="600" data-h="1299" aria-label="Збільшити: Темна тема" data-label-uk="Збільшити: Темна тема" data-label-en="Enlarge: Dark theme">
               <img src="../../images/cases/coffee-miniapp/dark-theme.webp" width="600" height="1299" alt="Темна тема" data-alt-uk="Темна тема" data-alt-en="Dark theme" loading="lazy" decoding="async">
             </button>
@@ -162,24 +177,24 @@
         </div>
     </section>
 
-    <section class="case-block reveal" aria-labelledby="h-benefits">
+    <section class="case-block" id="s-benefits" aria-labelledby="h-benefits">
       <h2 class="block-label mono" id="h-benefits"><span class="num">06</span><span data-l="uk">Що це дає бізнесу</span><span data-l="en">What it gives the business</span></h2>
       <ul class="benefits">
-        <li><span data-l="uk">Замовлення без черги й дзвінків — гостю нічого не треба встановлювати</span><span data-l="en">Orders without queues or calls, and guests install nothing</span></li>
-        <li><span data-l="uk">Бариста керує всіма замовленнями з телефона</span><span data-l="en">The barista handles every order from a phone</span></li>
-        <li><span data-l="uk">Захист від помилок і підробки суми замовлення</span><span data-l="en">Protection from mistakes and tampered totals</span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Замовлення без черги й дзвінків — гостю нічого не треба встановлювати</span><span data-l="en">Orders without queues or calls, and guests install nothing</span></span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Бариста керує всіма замовленнями з телефона</span><span data-l="en">The barista handles every order from a phone</span></span></li>
+        <li><span class="benefit-bar" aria-hidden="true"></span><span class="benefit-bar benefit-bar--end" aria-hidden="true"></span><span class="benefit-text"><span data-l="uk">Захист від помилок і підробки суми замовлення</span><span data-l="en">Protection from mistakes and tampered totals</span></span></li>
       </ul>
     </section>
 
-    <a class="case-next reveal" href="../booking-bot/" style="--next-tint: #5aa9ff">
+    <a class="case-next" href="../booking-bot/" style="--next-tint: #5aa9ff" data-tint="#5aa9ff" data-cursor>
       <span class="mono"><span data-l="uk">Наступний проєкт</span><span data-l="en">Next project</span></span>
-      <span class="case-next-title"><span data-l="uk">Бот онлайн-запису в барбершоп</span><span data-l="en">Barbershop booking bot</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+      <span class="case-next-title"><span class="case-next-name" data-split-case><span data-l="uk">Бот онлайн-запису в барбершоп</span><span data-l="en">Barbershop booking bot</span></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
     </a>
 
-    <section class="case-cta reveal">
-      <h2 class="cta-title"><span data-l="uk">Потрібно щось <span class="accent">схоже</span>?</span><span data-l="en">Need something <span class="accent">like this</span>?</span></h2>
+    <section class="case-cta">
+      <h2 class="cta-title" data-split-case><span data-l="uk">Потрібно щось <span class="accent">схоже</span>?</span><span data-l="en">Need something <span class="accent">like this</span>?</span></h2>
       <p><span data-l="uk">Напишіть у Telegram — обговоримо задачу й терміни.</span><span data-l="en">Message me on Telegram and we’ll talk about your task and timeline.</span></p>
-      <a class="btn btn-primary btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-goatcounter-click="case-telegram-coffee-miniapp"><span data-l="uk">Написати в Telegram</span><span data-l="en">Message on Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></a>
+      <a class="case-btn case-btn-primary case-btn-big" href="https://t.me/nonelyyo" target="_blank" rel="noopener" data-magnetic="0.35" data-goatcounter-click="case-telegram-coffee-miniapp"><span class="magnetic-inner"><span data-l="uk">Написати в Telegram</span><span data-l="en">Message on Telegram</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19L19 5M19 5H8M19 5v11" fill="none" stroke="currentColor" stroke-width="2"/></svg></span></a>
     </section>
   </main>
 

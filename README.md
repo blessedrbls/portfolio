@@ -14,7 +14,7 @@ Personal portfolio of Oleksii, a web developer building websites, landing pages,
 - **Reactive work section.** A native swipe/drag carousel (touch, trackpad, mouse drag, arrows, keyboard). Hovering a project tints the sphere with that project's colour.
 - **Scroll storytelling.** Pinned hero with a letter-by-letter exit, a statement whose words light up as you scroll, and a process timeline whose line draws itself.
 - **Services.** Cards with a 3D tilt and a neon border that follows the cursor.
-- **Case studies.** Each project has its own page (`work/<project>/`): the task, how it works, what was built, technical highlights, a screenshot gallery with full-screen zoom, and what it gives the business. Pages are static HTML, so search engines index them, and the language choice carries over from the main page.
+- **Case studies.** Clicking a project card opens its own page (`work/<project>/`): the task, how it works, what was built, technical highlights, a screenshot gallery with full-screen zoom, and what it gives the business. The same sphere guide and starfield run there in the project's colour, with letter-by-letter titles, a cover that opens up on scroll, self-drawing lines and tilting cards. Pages are static HTML, so search engines index them, and the language choice carries over from the main page.
 - **Easter egg.** Type `hello` (or click the logo five times).
 - Preloader, custom cursor, magnetic buttons, smooth scrolling (Lenis), film grain.
 - **Two languages.** Ukrainian (default) and English, with a smooth switch.
@@ -62,4 +62,4 @@ Case texts (both languages) live in `tools/cases-data.mjs`, and screenshots in `
 node tools/build-cases.mjs
 ```
 
-The generator reads covers, colours and links from `PROJECTS` in `main.js`, so they stay in one place. The generated `work/*/index.html` files are committed, so the site still needs no build step to deploy.
+The generator reads covers, colours and links from `PROJECTS` in `main.js`, so they stay in one place. Case pages load the same `main.js` (`<html data-page="case">`) and reuse the 3D scene, cursor and scroll effects; their own styles are in `case.css`. The generated `work/*/index.html` files are committed, so the site still needs no build step to deploy.

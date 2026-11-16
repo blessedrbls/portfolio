@@ -21,7 +21,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
@@ -110,19 +110,19 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
 }
 .case-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 2rem; }
 
-.btn {
+.case-btn {
   display: inline-flex; align-items: center; gap: 0.6rem;
   padding: 0.85rem 1.3rem; border-radius: 999px;
   border: 1px solid var(--line);
   font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
   transition: border-color 0.3s, background-color 0.3s, color 0.3s, transform 0.3s var(--ease-out);
 }
-.btn svg { width: 0.9rem; height: 0.9rem; transition: transform 0.3s var(--ease-out); }
-.btn:hover { border-color: rgba(241, 240, 234, 0.4); transform: translateY(-2px); }
-.btn:hover svg { transform: translate(2px, -2px); }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 500; }
-.btn-primary:hover { background: #b590ff; border-color: #b590ff; }
-.btn-big { padding: 1.1rem 1.7rem; font-size: 0.85rem; }
+.case-btn svg { width: 0.9rem; height: 0.9rem; transition: transform 0.3s var(--ease-out); }
+.case-btn:hover { border-color: rgba(241, 240, 234, 0.4); transform: translateY(-2px); }
+.case-btn:hover svg { transform: translate(2px, -2px); }
+.case-btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 500; }
+.case-btn-primary:hover { background: #b590ff; border-color: #b590ff; }
+.case-btn-big { padding: 1.1rem 1.7rem; font-size: 0.85rem; }
 
 .case-meta {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2fr);
@@ -169,7 +169,9 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
 
 .features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
 .feature-col {
-  padding: clamp(1.25rem, 2.4vw, 2rem); border: 1px solid var(--line); border-radius: 20px; background: var(--bg-2);
+  position: relative; overflow: hidden;
+  padding: clamp(1.25rem, 2.4vw, 2rem); border: 1px solid var(--line); border-radius: 20px;
+  background: rgba(10, 9, 16, 0.78);
 }
 .feature-col h3, .detail h3 {
   font-family: var(--font-display); font-weight: 600; font-size: clamp(1.05rem, 1.4vw, 1.3rem); letter-spacing: -0.03em;
@@ -188,7 +190,8 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
 .detail {
   padding: clamp(1.25rem, 2.4vw, 1.75rem); border-radius: 20px;
   border: 1px solid var(--line);
-  background: linear-gradient(160deg, color-mix(in srgb, var(--tint) 10%, transparent), transparent 60%), var(--bg-2);
+  position: relative; overflow: hidden;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tint) 12%, transparent), transparent 60%), rgba(10, 9, 16, 0.78);
 }
 .detail p { margin-top: 0.75rem; color: #b9b8b2; }
 
@@ -222,7 +225,7 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
   display: block; margin-top: clamp(4.5rem, 10vw, 8rem);
   padding: clamp(2rem, 5vw, 3.5rem); border-radius: 26px;
   border: 1px solid var(--line);
-  background: radial-gradient(70% 120% at 100% 100%, color-mix(in srgb, var(--next-tint) 22%, transparent), transparent 70%), var(--bg-2);
+  background: radial-gradient(70% 120% at 100% 100%, color-mix(in srgb, var(--next-tint) 22%, transparent), transparent 70%), rgba(10, 9, 16, 0.55);
   transition: border-color 0.4s, transform 0.5s var(--ease-out);
 }
 .case-next .mono { color: var(--muted); }
@@ -262,12 +265,8 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
   background: var(--accent); color: var(--accent-ink); font-size: 1.6rem; line-height: 1;
 }
 
-/* ---------- Поява при скролі (лише з JS і без «менше руху») ---------- */
-.js .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s var(--ease-out), transform 0.9s var(--ease-out); }
-.js .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .js .reveal { opacity: 1; transform: none; transition: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
 
@@ -283,5 +282,113 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
   .gallery-phones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gallery-chats { columns: 1; }
   .flow li { grid-template-columns: 2.5rem 1fr; }
-  .case-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .case-actions .case-btn { flex: 1 1 auto; justify-content: center; }
 }
+
+/* =========================================================
+   Спільне з головною: курсор, зерно, прогрес, 3D-полотно, легкий режим
+   ========================================================= */
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+.grain {
+  position: fixed; inset: -220px; z-index: 150; pointer-events: none; opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 0.9s steps(5) infinite;
+}
+@keyframes grain {
+  0% { transform: translate3d(0, 0, 0); } 20% { transform: translate3d(-90px, 60px, 0); }
+  40% { transform: translate3d(70px, -110px, 0); } 60% { transform: translate3d(-40px, 100px, 0); }
+  80% { transform: translate3d(110px, 30px, 0); } 100% { transform: translate3d(0, 0, 0); }
+}
+.reduced .grain { animation: none; }
+.lite .grain { display: none; }
+.lite body { background-image: var(--grain-bg, none); }
+
+.cursor { display: none; }
+.has-cursor .cursor { display: block; }
+.has-cursor, .has-cursor * { cursor: none !important; }
+.cursor-dot, .cursor-ring {
+  position: fixed; top: 0; left: 0; z-index: 250; pointer-events: none;
+  opacity: 0; transition: opacity 0.3s ease; will-change: transform;
+}
+.cursor.is-visible .cursor-dot, .cursor.is-visible .cursor-ring { opacity: 1; }
+.cursor-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: var(--accent); }
+.cursor-ring { width: 42px; height: 42px; margin: -21px 0 0 -21px; }
+.cursor-ring span {
+  display: block; width: 100%; height: 100%; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: transform 0.45s var(--ease-out), background-color 0.3s, border-color 0.3s;
+}
+.cursor.is-hover .cursor-ring span {
+  transform: scale(1.75);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+}
+.cursor.is-hover .cursor-dot { opacity: 0; }
+.cursor.is-down .cursor-ring span { transform: scale(0.75); }
+.cursor.is-hover.is-down .cursor-ring span { transform: scale(1.45); }
+
+.scroll-progress {
+  position: fixed; inset: 0 0 auto 0; z-index: 160; height: 2px;
+  background: var(--accent); transform: scaleX(0); transform-origin: 0 50%; pointer-events: none;
+}
+.reduced .scroll-progress, .no-js .scroll-progress { display: none; }
+
+/* Полотно: без анімацій — у першому екрані; зі сферою-провідником — фіксований фон усієї сторінки */
+.case-hero { position: relative; }
+.case-hero > :not(.hero-canvas) { position: relative; z-index: 1; }
+.hero-canvas { position: absolute; inset: 0 calc(var(--gutter) * -1); width: calc(100% + var(--gutter) * 2); height: 100%; z-index: 0; pointer-events: none; }
+.hero-canvas.is-guide { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.case-header { z-index: 30; }
+main, .case-footer { position: relative; z-index: 2; }
+
+/* Літери заголовків (splitText із main.js) */
+[data-split-case] .word { display: inline-block; white-space: nowrap; }
+[data-split-case] .char, [data-split-case] .char-in { display: inline-block; }
+.cta-title .word.is-accent, .cta-title .is-accent .char:not(.is-plain) { color: var(--accent); }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Перший екран чекає на появу (якщо скрипти не прийшли — показується через 3.5 с) */
+.js:not(.reduced):not(.reveal-fallback) .case-title,
+.js:not(.reduced):not(.reveal-fallback) .intro { opacity: 0; }
+
+/* Лінія над метаданими промальовується (--meta-line: 0 → 1) */
+.case-meta { position: relative; border-top-color: transparent; --meta-line: 1; }
+.case-meta::before {
+  content: ''; position: absolute; left: 0; right: 0; top: -1px; height: 1px;
+  background: var(--line);
+  transform: scaleX(var(--meta-line)); transform-origin: 0 50%;
+}
+
+/* «Як це працює» і «Що це дає»: лінії-роздільники малюються анімацією */
+.flow li, .benefits li { position: relative; border-top-color: transparent; }
+.flow li:last-child, .benefits li:last-child { border-bottom-color: transparent; }
+.flow-bar, .benefit-bar {
+  position: absolute; left: 0; right: 0; top: -1px; height: 1px;
+  background: var(--line); transform-origin: 0 50%;
+}
+.flow-bar--end, .benefit-bar--end { top: auto; bottom: -1px; }
+.benefits li:not(:last-child) .benefit-bar--end { display: none; }
+.flow li:hover .flow-bar:not(.flow-bar--end) { background: color-mix(in srgb, var(--tint) 70%, transparent); }
+.flow li { transition: padding-left 0.5s var(--ease-out); }
+.flow li:hover { padding-left: 0.5rem; }
+
+/* «Задача»: слова, що загоряються */
+.case-statement .w { display: inline; }
+
+/* Картки: світло там, де курсор */
+.feature-col::after, .detail::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.4s;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--tint) 18%, transparent), transparent 70%);
+}
+.feature-col:hover::after, .detail:hover::after { opacity: 1; }
+.feature-col:hover, .detail:hover { border-color: color-mix(in srgb, var(--tint) 45%, transparent); }
+.feature-col, .detail { transition: border-color 0.4s; will-change: transform; }
+
+/* Кнопки з «магнітом»: внутрішній шар рухається трохи інакше */
+.case-btn .magnetic-inner { display: inline-flex; align-items: center; gap: 0.6rem; }
+.case-btn:hover { transform: none; }
