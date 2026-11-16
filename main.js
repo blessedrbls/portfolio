@@ -15,7 +15,7 @@ const PROJECTS = [
   {
     kind: 'miniapp',
     motif: 'cup',
-    image: '',
+    image: 'images/coffee-miniapp.webp',
     type: { uk: 'Mini App', en: 'Mini App' },
     title: { uk: "Telegram Mini App для кав'ярні", en: 'Coffee shop Telegram Mini App' },
     desc: {
@@ -29,7 +29,7 @@ const PROJECTS = [
   {
     kind: 'bot',
     motif: 'calendar',
-    image: '',
+    image: 'images/booking-bot.webp',
     type: { uk: 'Telegram-бот', en: 'Telegram bot' },
     title: { uk: 'Бот онлайн-запису в барбершоп', en: 'Barbershop booking bot' },
     desc: {
@@ -43,7 +43,7 @@ const PROJECTS = [
   {
     kind: 'site',
     motif: 'barber',
-    image: '',
+    image: 'images/barbershop-site.webp',
     type: { uk: 'Сайт', en: 'Website' },
     title: { uk: 'Сайт барбершопу', en: 'Barbershop website' },
     desc: {
@@ -57,12 +57,12 @@ const PROJECTS = [
   {
     kind: 'site',
     motif: 'play',
-    image: '',
+    image: 'images/landing-course.webp',
     type: { uk: 'Лендінг', en: 'Landing page' },
     title: { uk: 'Лендінг онлайн-курсу', en: 'Online course landing page' },
     desc: {
-      uk: 'Демо-лендінг для онлайн-курсу з Python на чистому HTML, CSS і JavaScript.',
-      en: 'Demo landing page for an online Python course, built with plain HTML, CSS and JavaScript.',
+      uk: 'Лендінг курсу з Python: програма, тарифи, відгуки, FAQ і таймер до старту. Чистий HTML, CSS і JavaScript.',
+      en: 'Landing page for a Python course: curriculum, pricing, reviews, FAQ and a countdown. Plain HTML, CSS and JavaScript.',
     },
     tags: ['HTML', 'CSS', 'JavaScript'],
     demo: 'https://blessedrbls.github.io/landing-course/',
@@ -71,7 +71,7 @@ const PROJECTS = [
   {
     kind: 'bot',
     motif: 'bag',
-    image: '',
+    image: 'images/shop-bot.webp',
     type: { uk: 'Telegram-бот', en: 'Telegram bot' },
     title: { uk: 'Бот-магазин', en: 'Telegram shop bot' },
     desc: {
