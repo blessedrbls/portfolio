@@ -142,6 +142,8 @@ function page(c, i) {
     author: { '@type': 'Person', name: 'Oleksii', url: SITE },
     ...(p.code ? { codeRepository: p.code } : {}),
   })}</script>
+  <!-- Статистика відвідувань (GoatCounter: без cookie, ~3 КБ). Кліки рахуються через data-goatcounter-click -->
+  <script data-goatcounter="https://blessedrbls.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">${both(UI.skip)}</a>
