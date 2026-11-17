@@ -73,9 +73,15 @@ html[lang='en'] [data-l='uk'] { display: none; }
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 1.5rem;
   height: 4.5rem; padding: 0 var(--gutter);
-  background: rgba(0, 0, 0, 0.6);
-  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  /* без backdrop-filter: розмиття поверх живої 3D-сцени гальмує скрол (як і на головній) */
+  background: rgba(0, 0, 0, 0.92);
   border-bottom: 1px solid var(--line);
+}
+/* Фон шапки продовжується вгору за край екрана: браузер Telegram (і Safari з панеллю, що згортається)
+   малює сторінку й під своєю верхньою панеллю — без цього там «дірка», крізь яку видно контент */
+.case-header::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%;
+  height: 50vh; background: #000; pointer-events: none;
 }
 .logo { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; letter-spacing: -0.03em; }
 .back {
