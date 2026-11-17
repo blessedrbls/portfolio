@@ -62,4 +62,4 @@ Case texts (both languages) live in `tools/cases-data.mjs`, and screenshots in `
 node tools/build-cases.mjs
 ```
 
-The generator reads covers, colours and links from `PROJECTS` in `main.js`, so they stay in one place. Case pages load the same `main.js` (`<html data-page="case">`) and reuse the 3D scene, cursor and scroll effects; their own styles are in `case.css`. The generated `work/*/index.html` files are committed, so the site still needs no build step to deploy.
+The generator reads covers, colours and links from `PROJECTS` in `main.js`, so they stay in one place. Link previews (Open Graph, 1200×630, Ukrainian + English) are rendered from the real 3D scene: start a local server on port 8123 and run `node tools/og-images.mjs` to regenerate `og-image.jpg` and `images/og/*.jpg`. Case pages load the same `main.js` (`<html data-page="case">`) and reuse the 3D scene, cursor and scroll effects; their own styles are in `case.css`. The generated `work/*/index.html` files are committed, so the site still needs no build step to deploy.

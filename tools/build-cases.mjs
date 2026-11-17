@@ -108,12 +108,14 @@ function page(c, i) {
   <meta property="og:url" content="${url}">
   <meta property="og:title" content="${esc(c.title.uk)} — кейс">
   <meta property="og:description" content="${esc(c.lead.uk)}">
-  <meta property="og:image" content="${SITE}${cover}">
-  <meta property="og:image:width" content="${cw}">
-  <meta property="og:image:height" content="${ch}">
+  <meta property="og:image" content="${SITE}images/og/${c.slug}.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${esc(c.title.uk)} / ${esc(c.title.en)}">
   <meta property="og:locale" content="uk_UA">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="${SITE}images/og/${c.slug}.jpg">
   <script>
     (function () {
       var d = document.documentElement;
