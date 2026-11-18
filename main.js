@@ -1810,7 +1810,7 @@ function initGrain() {
 
 /* =========================================================
    Перехід між сторінками: головна ⇄ кейси.
-   Ідемо: сторінка швидко гасне в чорне (~0.25 с) і лише тоді переходимо.
+   Ідемо: сторінка швидко гасне в чорне (~0.12 с) і лише тоді переходимо.
    Приходимо: сторінка вже чорна (клас pt-enter з <head>) і так само швидко проявляється.
    ========================================================= */
 const PT_KEY = 'pt';
@@ -1835,7 +1835,7 @@ function navigateWithTransition(href) {
   el.classList.add('is-on');
   lenis?.stop();
   try { sessionStorage.setItem(PT_KEY, JSON.stringify({ t: Date.now() })); } catch (e) { /* приватний режим — без проявлення на новій сторінці */ }
-  window.gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.in', onComplete: () => { location.href = href; } });
+  window.gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: 'power1.in', onComplete: () => { location.href = href; } });
 }
 
 // Якщо прийшли з переходом — сторінка чорна; повертаємо функцію, що її проявить
@@ -1848,7 +1848,7 @@ function enterTransition() {
   el.classList.add('is-on');
   window.gsap.set(el, { opacity: 1 });
   html.classList.remove('pt-enter');
-  return () => window.gsap.to(el, { opacity: 0, duration: 0.4, ease: 'power2.out', onComplete: () => el.classList.remove('is-on') });
+  return () => window.gsap.to(el, { opacity: 0, duration: 0.22, ease: 'power1.out', onComplete: () => el.classList.remove('is-on') });
 }
 
 // Кнопка «Назад» браузера повертає сторінку з кешу чорною — проявляємо її
@@ -2168,7 +2168,7 @@ function initCasePage() {
   const fonts = document.fonts?.ready ?? Promise.resolve();
   Promise.race([fonts, new Promise((r) => setTimeout(r, 1000))]).then(() => {
     resolvePageReady();
-    revealCase(reveal ? 0.2 : 0);
+    revealCase(reveal ? 0.05 : 0);
     initCaseFx();
     initTilt('.feature-col, .detail');
     refreshScroll();
@@ -2206,7 +2206,7 @@ function init() {
   // і тоді ж стартує поява першого екрана
   runPreloader(!!reveal).then(() => {
     const heroTl = revealHero();
-    if (reveal) heroTl?.delay(0.2);
+    if (reveal) heroTl?.delay(0.05);
     initScrollFx();
     initServices();
     initWork();
