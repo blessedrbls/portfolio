@@ -1804,6 +1804,139 @@ function initGrain() {
 }
 
 /* =========================================================
+   Перехід між сторінками («шторка»): головна ⇄ кейси.
+   Ідемо: знизу виїжджає смуга кольору проєкту, за нею — темна шторка з назвою, і лише тоді переходимо.
+   Приходимо: сторінка вже закрита такою самою шторкою (клас pt-enter з <head>), вона їде вгору.
+   ========================================================= */
+const PT_KEY = 'pt';
+const langNow = () => (html.lang === 'en' ? 'en' : 'uk');
+
+function ptEl() {
+  let el = $('.pt');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'pt';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<div class="pt-a"></div><div class="pt-b"><div class="pt-inner"><span class="pt-kicker"></span><span class="pt-title"></span></div></div>';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function ptFill(el, { tint, title, kicker }) {
+  el.style.setProperty('--pt-tint', tint || '#a374ff');
+  $('.pt-title', el).textContent = title || '';
+  $('.pt-kicker', el).textContent = kicker || '';
+}
+
+// Звичайний клік лівою кнопкою без модифікаторів — тоді робимо перехід зі шторкою
+const ptPlainClick = (e) => !(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
+
+function navigateWithTransition(href, info) {
+  if (REDUCED || !HAS_GSAP) { location.href = href; return; }
+  const { gsap } = window;
+  const el = ptEl();
+  ptFill(el, info);
+  el.classList.add('is-on');
+  lenis?.stop();
+  try { sessionStorage.setItem(PT_KEY, JSON.stringify({ ...info, t: Date.now() })); } catch (e) { /* приватний режим — просто без шторки на новій сторінці */ }
+  gsap.timeline()
+    .fromTo($('.pt-a', el), { yPercent: 100 }, { yPercent: 0, duration: 0.7, ease: 'expo.inOut' }, 0)
+    .fromTo($('.pt-b', el), { yPercent: 100 }, { yPercent: 0, duration: 0.7, ease: 'expo.inOut' }, 0.1)
+    .fromTo($$('.pt-kicker, .pt-title', el), { yPercent: 70, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.6, ease: 'expo.out', stagger: 0.06 }, 0.42)
+    .call(() => { location.href = href; }, null, 0.78);
+}
+
+// Якщо прийшли зі шторкою — показуємо її закритою й повертаємо функцію, що її відкриє
+function enterTransition() {
+  if (!html.classList.contains('pt-enter')) return null;
+  let info = null;
+  try { info = JSON.parse(sessionStorage.getItem(PT_KEY) || 'null'); sessionStorage.removeItem(PT_KEY); } catch (e) { /* ignore */ }
+  if (REDUCED || !HAS_GSAP || !info) { html.classList.remove('pt-enter'); return null; }
+  const { gsap } = window;
+  const el = ptEl();
+  ptFill(el, info);
+  el.classList.add('is-on');
+  gsap.set([$('.pt-a', el), $('.pt-b', el)], { yPercent: 0 });
+  html.classList.remove('pt-enter');
+  return () => gsap.timeline({ onComplete: () => el.classList.remove('is-on') })
+    .to($$('.pt-kicker, .pt-title', el), { yPercent: -50, opacity: 0, duration: 0.45, ease: 'power2.in', stagger: 0.04 }, 0)
+    .to($('.pt-b', el), { yPercent: -100, duration: 0.95, ease: 'expo.inOut' }, 0.15)
+    .to($('.pt-a', el), { yPercent: -100, duration: 0.95, ease: 'expo.inOut' }, 0.27);
+}
+
+// Кнопка «Назад» браузера повертає сторінку з кешу разом із закритою шторкою — відкриваємо її
+window.addEventListener('pageshow', (e) => {
+  if (!e.persisted) return;
+  html.classList.remove('pt-enter');
+  const el = $('.pt');
+  if (el) {
+    if (HAS_GSAP) window.gsap.set($$('.pt-a, .pt-b', el), { yPercent: 100 });
+    el.classList.remove('is-on');
+  }
+  lenis?.start();
+});
+
+// Підвантажуємо сторінку заздалегідь, щойно навели / торкнулись посилання — перехід швидший
+function ptPrefetch(a) {
+  const go = () => {
+    if (a.dataset.prefetched) return;
+    a.dataset.prefetched = '1';
+    const l = document.createElement('link');
+    l.rel = 'prefetch';
+    l.href = a.href;
+    document.head.appendChild(l);
+  };
+  a.addEventListener('pointerenter', go, { passive: true });
+  a.addEventListener('touchstart', go, { passive: true });
+  a.addEventListener('focus', go);
+}
+
+// Головна: картки проєктів → кейс
+function initHomeTransitions() {
+  const track = $('.work-track');
+  if (!track) return;
+  $$('.project-link', track).forEach(ptPrefetch);
+  track.addEventListener('click', (e) => {
+    const a = e.target.closest('.project-link');
+    if (!a || !ptPlainClick(e)) return;
+    const p = PROJECTS[[...track.children].indexOf(a.closest('.project-card'))];
+    if (!p) return;
+    e.preventDefault();
+    const l = langNow();
+    navigateWithTransition(a.href, { tint: p.tint, title: p.title[l], kicker: l === 'en' ? `${p.type.en} · case study` : `${p.type.uk} · кейс` });
+  });
+}
+
+// Кейс: «Усі роботи», логотип → головна; «Наступний проєкт» → наступний кейс
+function initCaseTransitions() {
+  const home = (a, title) => {
+    ptPrefetch(a);
+    a.addEventListener('click', (e) => {
+      if (!ptPlainClick(e)) return;
+      e.preventDefault();
+      navigateWithTransition(a.href, { tint: '#a374ff', title: title[langNow()], kicker: '' });
+    });
+  };
+  const back = $('.case-header .back');
+  const logo = $('.case-header .logo');
+  if (back) home(back, { uk: 'Усі роботи', en: 'All work' });
+  if (logo) home(logo, { uk: 'oleksii*', en: 'oleksii*' });
+
+  const next = $('.case-next');
+  if (next) {
+    ptPrefetch(next);
+    next.addEventListener('click', (e) => {
+      if (!ptPlainClick(e)) return;
+      e.preventDefault();
+      const l = langNow();
+      const name = $(`.case-next-name [data-l="${l}"]`, next)?.dataset.text || '';
+      navigateWithTransition(next.href, { tint: next.dataset.tint, title: name, kicker: l === 'en' ? 'Next project' : 'Наступний проєкт' });
+    });
+  }
+}
+
+/* =========================================================
    Сторінка-кейс (work/<slug>/): та сама сфера-провідник і зорі,
    поява першого екрана по літерах, ефекти скролу, нахил карток
    ========================================================= */
@@ -1863,12 +1996,12 @@ function splitCaseText() {
 }
 
 // Поява першого екрана: літери заголовка піднімаються, решта виїжджає знизу
-function revealCase() {
+function revealCase(delay = 0) {
   clearTimeout(window.__revealFallback);
   if (REDUCED || !HAS_GSAP) { html.classList.add('reveal-fallback'); return; }
   const { gsap } = window;
   gsap.set(['.case-title', '.intro'], { opacity: 1 });
-  gsap.timeline({ defaults: { ease: 'expo.out' } })
+  gsap.timeline({ defaults: { ease: 'expo.out' }, delay })
     .fromTo('.case-kicker', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1 }, 0)
     .fromTo('.case-title .char-in', { yPercent: 115, rotate: 8, opacity: 0 },
       { yPercent: 0, rotate: 0, opacity: 1, duration: 1.2, stagger: 0.022 }, 0.1)
@@ -2046,13 +2179,17 @@ function initCasePage() {
     next.addEventListener('pointerleave', () => window.__sphere?.tint(null));
   }
 
+  const reveal = enterTransition(); // прийшли зі шторкою — вона відкриється, коли сторінка готова
+  initCaseTransitions();
+
   const fonts = document.fonts?.ready ?? Promise.resolve();
   Promise.race([fonts, new Promise((r) => setTimeout(r, 1000))]).then(() => {
     resolvePageReady();
-    revealCase();
+    revealCase(reveal ? 0.45 : 0);
     initCaseFx();
     initTilt('.feature-col, .detail');
     refreshScroll();
+    reveal?.();
   });
 
   initHero3D();
@@ -2068,6 +2205,8 @@ function init() {
   let saved = 'uk';
   try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ }
   renderProjects();
+  const reveal = enterTransition(); // прийшли з кейсу зі шторкою — без прелоадера
+  initHomeTransitions();
   initPreview();
   initSphereFun();
   applyLang(saved);
@@ -2082,8 +2221,9 @@ function init() {
 
   // Прелоадер ховається, щойно завантажились шрифти (максимум ~1.5 с),
   // і тоді ж стартує поява першого екрана
-  runPreloader().then(() => {
-    revealHero();
+  runPreloader(!!reveal).then(() => {
+    const heroTl = revealHero();
+    if (reveal) heroTl?.delay(0.45);
     initScrollFx();
     initServices();
     initWork();
@@ -2094,6 +2234,7 @@ function init() {
       if (lenis) lenis.scrollTo(target, { immediate: true });
       else target.scrollIntoView();
     }
+    reveal?.();
   });
 
   initHero3D();
@@ -2108,12 +2249,12 @@ function init() {
 let resolvePageReady;
 const pageReady = new Promise((r) => { resolvePageReady = r; });
 
-function runPreloader() {
+function runPreloader(skip = false) {
   const el = $('.preloader');
   const fontsReady = document.fonts?.ready ?? Promise.resolve();
   const fontsOrTimeout = Promise.race([fontsReady, new Promise((r) => setTimeout(r, 1000))]);
 
-  if (!el || REDUCED || !HAS_GSAP) {
+  if (!el || REDUCED || !HAS_GSAP || skip) {
     el?.remove();
     return fontsOrTimeout.then(() => resolvePageReady());
   }
