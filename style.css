@@ -1210,6 +1210,3 @@ html.preview-open { overflow: hidden; }
   }
   .grain { animation: none; }
 }
-
-/* ---------- Перехід між сторінками («стрибок крізь зорі»): текст схований, доки main.js його не проявить ---------- */
-html.pt-enter body > *:not(.hero-canvas):not(.grain) { opacity: 0; }

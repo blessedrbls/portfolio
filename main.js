@@ -220,7 +220,7 @@ const IS_TOUCH = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 const IS_MOBILE = IS_TOUCH || window.innerWidth < 768;
 const HAS_GSAP = typeof window.gsap !== 'undefined';
 // Яка це сторінка: головна чи кейс (work/<slug>/ — <html data-page="case">)
-const PAGE = document.documentElement.dataset.page || 'home';
+let PAGE = document.documentElement.dataset.page || 'home';
 
 // Якщо користувач змінить налаштування анімацій — просто перезавантажимо
 window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -599,7 +599,22 @@ function initScrollFx() {
 }
 
 // Швидкість прокрутки, прогрес-смужка, нахил при швидкому скролі
+let setSkew = null;
+let lastSkew = 0;
 function initScrollMotion() {
+  if (REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
+  window.gsap.ticker.add(() => {
+    scrollSpeed.raw *= 0.9; // коли скрол зупинився — швидкість плавно згасає
+    scrollSpeed.smooth += (scrollSpeed.raw - scrollSpeed.smooth) * 0.12;
+    if (setSkew) {
+      const skew = window.gsap.utils.clamp(-3.5, 3.5, scrollSpeed.smooth * -0.0025);
+      if (Math.abs(skew - lastSkew) > 0.01) { setSkew(skew); lastSkew = skew; }
+    }
+  });
+}
+
+// Для кожної сторінки: швидкість скролу, прогрес-смужка, елементи з нахилом
+function initScrollMotionPage() {
   if (REDUCED || !HAS_GSAP || !window.ScrollTrigger) return;
   const { gsap } = window;
 
@@ -614,16 +629,8 @@ function initScrollMotion() {
   });
 
   const skewTargets = $$('[data-skew]');
-  const setSkew = skewTargets.length ? gsap.quickSetter(skewTargets, 'skewY', 'deg') : null;
-  let lastSkew = 0;
-  gsap.ticker.add(() => {
-    scrollSpeed.raw *= 0.9; // коли скрол зупинився — швидкість плавно згасає
-    scrollSpeed.smooth += (scrollSpeed.raw - scrollSpeed.smooth) * 0.12;
-    if (setSkew) {
-      const skew = gsap.utils.clamp(-3.5, 3.5, scrollSpeed.smooth * -0.0025);
-      if (Math.abs(skew - lastSkew) > 0.01) { setSkew(skew); lastSkew = skew; }
-    }
-  });
+  setSkew = skewTargets.length ? gsap.quickSetter(skewTargets, 'skewY', 'deg') : null;
+  lastSkew = 0;
 }
 
 /* =========================================================
@@ -941,6 +948,8 @@ function initPreview() {
    • пасхалка: набрати «hello» / «привіт» або 5 разів швидко клікнути на логотип —
      феєрверк частинок і гіперстрибок крізь зорі.
    ========================================================= */
+let eggCelebrate = null;
+let eggKeysBound = false;
 function initSphereFun() {
   const track = $('.work-track');
   const sphere = () => window.__sphere;   // з'являється, коли завантажиться 3D
@@ -985,12 +994,16 @@ function initSphereFun() {
   };
 
   // «hello» або «привіт» з клавіатури (не коли друкуєш у полі вводу)
-  let typed = '';
-  document.addEventListener('keydown', (e) => {
-    if (e.target.closest?.('input, textarea, [contenteditable]') || e.key.length !== 1) return;
-    typed = (typed + e.key.toLowerCase()).slice(-12);
-    if (typed.endsWith('hello') || typed.endsWith('привіт')) { typed = ''; celebrate(); }
-  });
+  eggCelebrate = celebrate;
+  if (!eggKeysBound) {
+    eggKeysBound = true;
+    let typed = '';
+    document.addEventListener('keydown', (e) => {
+      if (e.target.closest?.('input, textarea, [contenteditable]') || e.key.length !== 1) return;
+      typed = (typed + e.key.toLowerCase()).slice(-12);
+      if (typed.endsWith('hello') || typed.endsWith('привіт')) { typed = ''; eggCelebrate?.(); }
+    });
+  }
 
   // 5 швидких кліків по логотипу
   const logo = $('.logo');
@@ -1518,13 +1531,13 @@ async function initHero3D() {
   // ---- Де починається кожен блок: звідси рахуємо, яку фігуру показувати ----
   // Перехід до фігури блоку — поки його верх їде від 60 % до 15 % висоти екрана
   // (пізніше, ніж з'являється блок, — щоб фігура не мінялась, поки дочитуєш попередній)
-  const STAGE_SECTIONS = PAGE === 'case'
+  const stageSections = () => (PAGE === 'case'
     ? ['.case-cover', '#s-flow', '#s-details', '#s-gallery', '.case-next']
-    : ['.statement', '#services', '#work', '#process', '#contact'];
+    : ['.statement', '#services', '#work', '#process', '#contact']);
   let stops = [];
   const measure = () => {
     const H = window.innerHeight;
-    stops = STAGE_SECTIONS.map((sel) => {
+    stops = stageSections().map((sel) => {
       const el = $(sel);
       if (!el) return null;
       const top = el.getBoundingClientRect().top + window.scrollY;
@@ -1639,13 +1652,17 @@ async function initHero3D() {
         .to(burstState, { v: 0, duration: 1.6, ease: 'elastic.out(1, 0.4)' });
     },
     hyper(seconds = 1.8) { hyper = seconds; lastActive = performance.now(); }, // ривок крізь зорі
+    // Нова сторінка без перезавантаження: свій колір, композиція й етапи — сфера пливе туди сама
+    setPage() {
+      const c = getComputedStyle(html).getPropertyValue(PAGE === 'case' ? '--tint' : '--accent').trim() || '#a374ff';
+      baseColor.set(c);
+      tintTarget.set(c);
+      pulseTarget = 0;
+      resize();
+      measure();
+      lastActive = performance.now();
+    },
   };
-  // прийшли з іншої сторінки «стрибком» — влітаємо на швидкості, зорі гальмують
-  if (window.__ptHyper) {
-    hyper = window.__ptHyper;
-    window.__ptHyper = 0;
-    uniforms.uIntro.value = Math.max(uniforms.uIntro.value, 0.45); // зорі видно одразу, не з нуля
-  }
 
   const lerp = THREE.MathUtils.lerp;
   const frame = () => {
@@ -1815,105 +1832,153 @@ function initGrain() {
 }
 
 /* =========================================================
-   Перехід між сторінками: «стрибок крізь зорі».
-   Ідемо: текст сторінки розчиняється, зорі розганяються в світлові штрихи, сфера розлітається —
-   і ми переходимо. Приходимо: влітаємо на швидкості, штрихи гальмують, сфера збирається, текст проявляється.
+   Перехід між сторінками одним «дублем»: сторінка НЕ перезавантажується.
+   3D-сцена (зорі + сфера) живе весь час. Клік → текст розчиняється, зорі розганяються,
+   сфера розлітається; тим часом підвантажуємо нову сторінку й підміняємо лише вміст.
+   Сфера сама пливе на нове місце й перефарбовується, зорі гальмують, новий текст проявляється.
+   Адреса змінюється (history), «Назад»/«Вперед» працюють, для пошуковиків це звичайні сторінки.
    ========================================================= */
-const PT_KEY = 'pt';
-// Усе, крім 3D-полотна із зорями, курсора й зерна (у нього своя прозорість 4 %): саме це гасне й проявляється
-const ptContent = () => $$('body > *').filter((el) => !el.matches('.hero-canvas, .cursor, .grain, script, link, style'));
+const SWAP_LINKS = '.project-link, .case-header .back, .case-header .logo, .case-next';
+const pageCache = new Map();
+let swapping = false;
+let currentPath = location.pathname;
 
-// Звичайний клік лівою кнопкою без модифікаторів — тоді робимо перехід
+// Усе, крім 3D-полотна, курсора й зерна (у нього своя прозорість 4 %): саме це гасне й проявляється
+const ptContent = () => $$('body > *').filter((el) => !el.matches('.hero-canvas, .cursor, .grain, script, link, style'));
+// Звичайний клік лівою кнопкою без модифікаторів (інакше — як звичайне посилання, напр. нова вкладка)
 const ptPlainClick = (e) => !(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
 
-function navigateWithTransition(href) {
-  if (REDUCED || !HAS_GSAP) { location.href = href; return; }
-  const { gsap } = window;
-  lenis?.stop();
-  try { sessionStorage.setItem(PT_KEY, JSON.stringify({ t: Date.now() })); } catch (e) { /* приватний режим — нова сторінка просто з'явиться */ }
-  window.__sphere?.hyper(2);     // зорі — у штрихи
-  window.__sphere?.burst(1.1);   // сфера розлітається на частинки
-  gsap.to(ptContent(), { opacity: 0, duration: 0.3, ease: 'power2.in' });
-  gsap.delayedCall(0.38, () => { location.href = href; });
+function fetchPage(url) {
+  if (!pageCache.has(url)) {
+    pageCache.set(url, fetch(url).then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.text();
+    }).catch((err) => { pageCache.delete(url); throw err; }));
+  }
+  return pageCache.get(url);
 }
 
-// Якщо прийшли з переходом — текст схований; повертаємо функцію, що його проявить.
-// Гальмування зірок запускає initHero3D (window.__ptHyper), щойно сцена готова.
-function enterTransition() {
-  if (!html.classList.contains('pt-enter')) return null;
-  let info = null;
-  try { info = JSON.parse(sessionStorage.getItem(PT_KEY) || 'null'); sessionStorage.removeItem(PT_KEY); } catch (e) { /* ignore */ }
-  if (REDUCED || !HAS_GSAP || !info) { html.classList.remove('pt-enter'); return null; }
+// Стилі нової сторінки: підключаємо, чекаємо завантаження, потім прибираємо зайві
+async function swapStyles(doc, base) {
+  const isFont = (h) => h.includes('fonts.googleapis');
+  const want = [...doc.querySelectorAll('link[rel="stylesheet"]')]
+    .map((l) => new URL(l.getAttribute('href'), base).href).filter((h) => !isFont(h));
+  const have = [...document.querySelectorAll('link[rel="stylesheet"]')].filter((l) => !isFont(l.href));
+  await Promise.all(want.filter((h) => !have.some((l) => l.href === h)).map((h) => new Promise((done) => {
+    const l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = h;
+    l.onload = l.onerror = done;
+    document.head.appendChild(l);
+  })));
+  have.filter((l) => !want.includes(l.href)).forEach((l) => l.remove());
+}
+
+// Прибираємо все, що належить старій сторінці (тригери скролу, «прилиплий» перший екран тощо)
+function teardownPage() {
+  fxCtx?.revert();
+  fxCtx = null;
+  window.ScrollTrigger?.getAll().forEach((t) => t.kill());
+  heroScroll.p = 0;
+  eggCelebrate = null;
+  setSkew = null;
+  html.classList.remove('fx', 'reveal-fallback', 'preview-open', 'lang-fade');
+}
+
+async function swapTo(href, push) {
+  const url = new URL(href, location.href);
+  const docUrl = url.href.split('#')[0];
+  if (swapping) return;
+  swapping = true;
   const { gsap } = window;
+
+  // 1) Відліт: текст розчиняється, зорі — у штрихи, сфера розлітається
+  lenis?.stop();
+  window.__sphere?.hyper(2.6);
+  window.__sphere?.burst(1.1);
+  window.__sphere?.tint(null);
+  const fade = new Promise((done) => gsap.to(ptContent(), { opacity: 0, duration: 0.3, ease: 'power2.in', onComplete: done }));
+
+  let doc;
+  try {
+    const [text] = await Promise.all([fetchPage(docUrl), fade]);
+    doc = new DOMParser().parseFromString(text, 'text/html');
+    await swapStyles(doc, docUrl);
+  } catch (err) {
+    location.href = url.href; // щось пішло не так — звичайний перехід
+    return;
+  }
+
+  // 2) Адреса (до вставки вмісту: відносні шляхи картинок рахуються від нової адреси)
+  if (push) history.pushState({ swap: true }, '', url.href);
+  currentPath = url.pathname;
+
+  // 3) Підміна вмісту; 3D-полотно, курсор і зерно лишаються
+  teardownPage();
+  [...document.body.children].forEach((el) => { if (!el.matches('.hero-canvas, .cursor, .grain, script')) el.remove(); });
+  const frag = document.createDocumentFragment();
+  [...doc.body.children].forEach((el) => {
+    if (el.matches('.hero-canvas, .cursor, .grain, .preloader, script')) return;
+    const node = document.importNode(el, true);
+    node.querySelectorAll('.hero-canvas').forEach((c) => c.remove());
+    frag.appendChild(node);
+  });
+  const nd = doc.documentElement;
+  PAGE = nd.dataset.page || 'home';
+  html.dataset.page = PAGE;
+  const grainBg = html.style.getPropertyValue('--grain-bg');
+  html.setAttribute('style', nd.getAttribute('style') || '');
+  if (grainBg) html.style.setProperty('--grain-bg', grainBg);
+  document.title = doc.title;
+  document.body.appendChild(frag);
   const content = ptContent();
   gsap.set(content, { opacity: 0 });
-  html.classList.remove('pt-enter');
-  window.__ptHyper = 1.1;
-  return () => gsap.to(content, { opacity: 1, duration: 0.5, ease: 'power2.out', clearProps: 'opacity' });
-}
 
-// Кнопка «Назад» браузера повертає сторінку з кешу з розчиненим текстом — повертаємо його
-window.addEventListener('pageshow', (e) => {
-  if (!e.persisted) return;
-  html.classList.remove('pt-enter');
-  if (HAS_GSAP) window.gsap.set(ptContent(), { opacity: 1, clearProps: 'opacity' });
-  lenis?.start();
-});
-
-// Підвантажуємо сторінку заздалегідь, щойно навели / торкнулись посилання — перехід швидший
-function ptPrefetch(a) {
-  const go = () => {
-    if (a.dataset.prefetched) return;
-    a.dataset.prefetched = '1';
-    const l = document.createElement('link');
-    l.rel = 'prefetch';
-    l.href = a.href;
-    document.head.appendChild(l);
-  };
-  a.addEventListener('pointerenter', go, { passive: true });
-  a.addEventListener('touchstart', go, { passive: true });
-  a.addEventListener('focus', go);
-}
-
-// Головна: картки проєктів → кейс
-function initHomeTransitions() {
-  const track = $('.work-track');
-  if (!track) return;
-  $$('.project-link', track).forEach(ptPrefetch);
-  track.addEventListener('click', (e) => {
-    const a = e.target.closest('.project-link');
-    if (!a || !ptPlainClick(e)) return;
-    const p = PROJECTS[[...track.children].indexOf(a.closest('.project-card'))];
-    if (!p) return;
-    e.preventDefault();
-    navigateWithTransition(a.href);
-  });
-}
-
-// Кейс: «Усі роботи», логотип → головна; «Наступний проєкт» → наступний кейс
-function initCaseTransitions() {
-  const home = (a) => {
-    ptPrefetch(a);
-    a.addEventListener('click', (e) => {
-      if (!ptPlainClick(e)) return;
-      e.preventDefault();
-      navigateWithTransition(a.href);
-    });
-  };
-  const back = $('.case-header .back');
-  const logo = $('.case-header .logo');
-  if (back) home(back);
-  if (logo) home(logo);
-
-  const next = $('.case-next');
-  if (next) {
-    ptPrefetch(next);
-    next.addEventListener('click', (e) => {
-      if (!ptPlainClick(e)) return;
-      e.preventDefault();
-      navigateWithTransition(next.href);
-    });
+  // 4) Нагору (або до якоря), нова сторінка оживає, сфера пливе на своє місце
+  window.scrollTo(0, 0);
+  lenis?.scrollTo(0, { immediate: true, force: true });
+  if (PAGE === 'case') initCaseContent(true);
+  else initHomeContent(true);
+  window.__sphere?.setPage();
+  refreshScroll();
+  const target = url.hash.length > 1 ? document.getElementById(url.hash.slice(1)) : null;
+  if (target) {
+    if (lenis) lenis.scrollTo(target, { immediate: true, force: true });
+    else target.scrollIntoView();
   }
+  lenis?.start();
+  lenis?.resize();
+
+  // 5) Прибуття: штрихи гальмують самі, текст проявляється
+  gsap.to(content, { opacity: 1, duration: 0.5, ease: 'power2.out', clearProps: 'opacity' });
+  $('main')?.setAttribute('tabindex', '-1');
+  $('main')?.focus({ preventScroll: true }); // для клавіатури й скрінрідерів — фокус на новому вмісті
+  try { window.goatcounter?.count?.({ path: location.pathname, title: document.title }); window.goatcounter?.bind_events?.(); } catch (e) { /* статистика — не критично */ }
+  swapping = false;
+}
+
+function initPageSwap() {
+  if (REDUCED || !HAS_GSAP || !window.fetch || !window.DOMParser || !history.pushState) return; // звичайні посилання
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest?.(SWAP_LINKS);
+    if (!a || !ptPlainClick(e) || a.target === '_blank') return;
+    const url = new URL(a.href, location.href);
+    if (url.origin !== location.origin) return;
+    e.preventDefault();
+    swapTo(url.href, true);
+  });
+  // Підвантажуємо сторінку заздалегідь, щойно навели / торкнулись посилання
+  const pre = (e) => {
+    const a = e.target.closest?.(SWAP_LINKS);
+    if (a) fetchPage(new URL(a.href, location.href).href.split('#')[0]).catch(() => {});
+  };
+  document.addEventListener('pointerover', pre, { passive: true });
+  document.addEventListener('touchstart', pre, { passive: true });
+  document.addEventListener('focusin', pre);
+  history.replaceState({ swap: true }, '');
+  window.addEventListener('popstate', () => {
+    if (location.pathname !== currentPath) swapTo(location.href, false);
+  });
 }
 
 /* =========================================================
@@ -1976,12 +2041,12 @@ function splitCaseText() {
 }
 
 // Поява першого екрана: літери заголовка піднімаються, решта виїжджає знизу
-function revealCase(delay = 0) {
+function revealCase() {
   clearTimeout(window.__revealFallback);
   if (REDUCED || !HAS_GSAP) { html.classList.add('reveal-fallback'); return; }
   const { gsap } = window;
   gsap.set(['.case-title', '.intro'], { opacity: 1 });
-  gsap.timeline({ defaults: { ease: 'expo.out' }, delay })
+  gsap.timeline({ defaults: { ease: 'expo.out' } })
     .fromTo('.case-kicker', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 1 }, 0)
     .fromTo('.case-title .char-in', { yPercent: 115, rotate: 8, opacity: 0 },
       { yPercent: 0, rotate: 0, opacity: 1, duration: 1.2, stagger: 0.022 }, 0.1)
@@ -2143,14 +2208,13 @@ function initZoom() {
   dlg.addEventListener('close', () => { lenis?.start(); opener?.focus(); });
 }
 
-function initCasePage() {
+// Вміст кейсу (на старті й після кожного переходу без перезавантаження)
+function initCaseContent(swapped = false) {
   splitCaseText();
   initCaseLang();
-  initScroll();
-  initScrollMotion();
-  initCursor();
   initMagnetic();
   initZoom();
+  initScrollMotionPage();
 
   // Наведення на «Наступний проєкт» — сфера забарвлюється в його колір
   const next = $('.case-next');
@@ -2159,66 +2223,68 @@ function initCasePage() {
     next.addEventListener('pointerleave', () => window.__sphere?.tint(null));
   }
 
-  const reveal = enterTransition(); // прийшли зі шторкою — вона відкриється, коли сторінка готова
-  initCaseTransitions();
-
-  const fonts = document.fonts?.ready ?? Promise.resolve();
-  Promise.race([fonts, new Promise((r) => setTimeout(r, 1000))]).then(() => {
-    resolvePageReady();
-    revealCase(reveal ? 0.05 : 0);
+  const start = () => {
+    revealCase();
     initCaseFx();
     initTilt('.feature-col, .detail');
     refreshScroll();
-    reveal?.();
+  };
+  if (swapped) { start(); return; }
+  const fonts = document.fonts?.ready ?? Promise.resolve();
+  Promise.race([fonts, new Promise((r) => setTimeout(r, 1000))]).then(() => {
+    resolvePageReady();
+    start();
   });
-
-  initHero3D();
-  initGrain();
-  if (new URLSearchParams(location.search).has('fps')) initFpsMeter();
 }
 
-/* =========================================================
-   Старт
-   ========================================================= */
-function init() {
-  if (PAGE === 'case') { initCasePage(); return; }
-  let saved = 'uk';
-  try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ }
+// Вміст головної (на старті — після прелоадера; після переходу — одразу)
+function initHomeContent(swapped = false) {
+  let saved = html.lang === 'en' ? 'en' : 'uk';
+  if (!swapped) { try { saved = localStorage.getItem('lang') || 'uk'; } catch (e) { /* ignore */ } }
   renderProjects();
-  const reveal = enterTransition(); // прийшли з кейсу зі шторкою — без прелоадера
-  initHomeTransitions();
   initPreview();
   initSphereFun();
   applyLang(saved);
   initLangSwitch();
-
-  initScroll();
-  initScrollMotion();
   initHeader();
   initAnchors();
-  initCursor();
   initMagnetic();
+  initScrollMotionPage();
 
-  // Прелоадер ховається, щойно завантажились шрифти (максимум ~1.5 с),
-  // і тоді ж стартує поява першого екрана
-  runPreloader(!!reveal).then(() => {
-    const heroTl = revealHero();
-    if (reveal) heroTl?.delay(0.05);
+  const start = () => {
+    revealHero();
     initScrollFx();
     initServices();
     initWork();
     refreshScroll();
+  };
+  if (swapped) { start(); return; }
+  // Прелоадер ховається, щойно завантажились шрифти (максимум ~1.5 с), і тоді ж стартує поява першого екрана
+  runPreloader().then(() => {
+    start();
     // Посилання з якорем (наприклад …/portfolio/#contact) — одразу до потрібного блоку
     const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
     if (target) {
       if (lenis) lenis.scrollTo(target, { immediate: true });
       else target.scrollIntoView();
     }
-    reveal?.();
   });
+}
 
+/* =========================================================
+   Старт
+   ========================================================= */
+function init() {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  // Один раз на весь візит: плавний скрол, швидкість скролу, курсор, 3D-сцена, зерно, переходи
+  initScroll();
+  initScrollMotion();
+  initCursor();
+  if (PAGE === 'case') initCaseContent();
+  else initHomeContent();
   initHero3D();
   initGrain();
+  initPageSwap();
   if (new URLSearchParams(location.search).has('fps')) initFpsMeter();
 }
 
@@ -2229,12 +2295,12 @@ function init() {
 let resolvePageReady;
 const pageReady = new Promise((r) => { resolvePageReady = r; });
 
-function runPreloader(skip = false) {
+function runPreloader() {
   const el = $('.preloader');
   const fontsReady = document.fonts?.ready ?? Promise.resolve();
   const fontsOrTimeout = Promise.race([fontsReady, new Promise((r) => setTimeout(r, 1000))]);
 
-  if (!el || REDUCED || !HAS_GSAP || skip) {
+  if (!el || REDUCED || !HAS_GSAP) {
     el?.remove();
     return fontsOrTimeout.then(() => resolvePageReady());
   }

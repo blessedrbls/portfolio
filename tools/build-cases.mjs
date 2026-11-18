@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { CASES } from './cases-data.mjs';
 
 const SITE = 'https://blessedrbls.github.io/portfolio/';
-const V = 8; // кеш-бастинг для case.css — збільшуй при змінах
+const V = 9; // кеш-бастинг для case.css — збільшуй при змінах
 // main.js спільний із головною: беремо ту саму версію, що й в index.html
 const MAIN_V = (readFileSync('index.html', 'utf8').match(/main\.js\?v=(\d+)/) || [])[1] || '1';
 
@@ -124,15 +124,6 @@ function page(c, i) {
       try { if (localStorage.getItem('lang') === 'en') d.lang = 'en'; } catch (e) {}
       // Страховка: якщо скрипти не завантажились — показати перший екран через 3.5 с
       window.__revealFallback = setTimeout(function () { d.classList.add('reveal-fallback'); }, 3500);
-      // Перехід між сторінками («стрибок крізь зорі»): якщо прийшли з іншої сторінки — текст одразу схований,
-      // щоб не було спалаху; main.js проявить його. Страховка — 4 с.
-      try {
-        var pt = JSON.parse(sessionStorage.getItem('pt') || 'null');
-        if (pt && Date.now() - pt.t < 6000 && !d.classList.contains('reduced')) {
-          d.classList.add('pt-enter');
-          setTimeout(function () { d.classList.remove('pt-enter'); }, 4000);
-        } else sessionStorage.removeItem('pt');
-      } catch (e) {}
     })();
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
