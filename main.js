@@ -1841,10 +1841,10 @@ function navigateWithTransition(href, info) {
   lenis?.stop();
   try { sessionStorage.setItem(PT_KEY, JSON.stringify({ ...info, t: Date.now() })); } catch (e) { /* приватний режим — просто без шторки на новій сторінці */ }
   gsap.timeline()
-    .fromTo($('.pt-a', el), { yPercent: 100 }, { yPercent: 0, duration: 0.7, ease: 'expo.inOut' }, 0)
-    .fromTo($('.pt-b', el), { yPercent: 100 }, { yPercent: 0, duration: 0.7, ease: 'expo.inOut' }, 0.1)
-    .fromTo($$('.pt-kicker, .pt-title', el), { yPercent: 70, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.6, ease: 'expo.out', stagger: 0.06 }, 0.42)
-    .call(() => { location.href = href; }, null, 0.78);
+    .fromTo($('.pt-a', el), { yPercent: 100 }, { yPercent: 0, duration: 0.42, ease: 'power3.inOut' }, 0)
+    .fromTo($('.pt-b', el), { yPercent: 100 }, { yPercent: 0, duration: 0.42, ease: 'power3.inOut' }, 0.06)
+    .fromTo($$('.pt-kicker, .pt-title', el), { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.35, ease: 'expo.out', stagger: 0.04 }, 0.22)
+    .call(() => { location.href = href; }, null, 0.48);
 }
 
 // Якщо прийшли зі шторкою — показуємо її закритою й повертаємо функцію, що її відкриє
@@ -1860,9 +1860,9 @@ function enterTransition() {
   gsap.set([$('.pt-a', el), $('.pt-b', el)], { yPercent: 0 });
   html.classList.remove('pt-enter');
   return () => gsap.timeline({ onComplete: () => el.classList.remove('is-on') })
-    .to($$('.pt-kicker, .pt-title', el), { yPercent: -50, opacity: 0, duration: 0.45, ease: 'power2.in', stagger: 0.04 }, 0)
-    .to($('.pt-b', el), { yPercent: -100, duration: 0.95, ease: 'expo.inOut' }, 0.15)
-    .to($('.pt-a', el), { yPercent: -100, duration: 0.95, ease: 'expo.inOut' }, 0.27);
+    .to($$('.pt-kicker, .pt-title', el), { yPercent: -50, opacity: 0, duration: 0.25, ease: 'power2.in', stagger: 0.03 }, 0)
+    .to($('.pt-b', el), { yPercent: -100, duration: 0.6, ease: 'power3.inOut' }, 0.05)
+    .to($('.pt-a', el), { yPercent: -100, duration: 0.6, ease: 'power3.inOut' }, 0.12);
 }
 
 // Кнопка «Назад» браузера повертає сторінку з кешу разом із закритою шторкою — відкриваємо її
@@ -2185,7 +2185,7 @@ function initCasePage() {
   const fonts = document.fonts?.ready ?? Promise.resolve();
   Promise.race([fonts, new Promise((r) => setTimeout(r, 1000))]).then(() => {
     resolvePageReady();
-    revealCase(reveal ? 0.45 : 0);
+    revealCase(reveal ? 0.2 : 0);
     initCaseFx();
     initTilt('.feature-col, .detail');
     refreshScroll();
@@ -2223,7 +2223,7 @@ function init() {
   // і тоді ж стартує поява першого екрана
   runPreloader(!!reveal).then(() => {
     const heroTl = revealHero();
-    if (reveal) heroTl?.delay(0.45);
+    if (reveal) heroTl?.delay(0.2);
     initScrollFx();
     initServices();
     initWork();
