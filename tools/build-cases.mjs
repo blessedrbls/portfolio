@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { CASES } from './cases-data.mjs';
 
 const SITE = 'https://blessedrbls.github.io/portfolio/';
-const V = 3; // кеш-бастинг для case.css — збільшуй при змінах
+const V = 4; // кеш-бастинг для case.css — збільшуй при змінах
 // main.js спільний із головною: беремо ту саму версію, що й в index.html
 const MAIN_V = (readFileSync('index.html', 'utf8').match(/main\.js\?v=(\d+)/) || [])[1] || '1';
 
