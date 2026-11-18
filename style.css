@@ -978,6 +978,68 @@ html:not(.fx) .process-line-fill { stroke-dashoffset: 0; }
   .contact-arrow { margin-left: auto; }
 }
 
+/* Активність на GitHub (дані — наживо з GitHub, малює main.js) */
+.gh {
+  --c: 13px;                      /* розмір клітинки */
+  --g: 3px;                       /* проміжок */
+  margin-top: clamp(3rem, 8vh, 5rem);
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(10, 9, 16, 0.72);
+  max-width: max-content;
+}
+.gh[hidden] { display: none; }
+.gh-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 2rem; }
+.gh-title { font-family: var(--font-display); font-weight: 600; font-size: clamp(1rem, 1.5vw, 1.25rem); letter-spacing: -0.02em; }
+.gh-title b { color: var(--accent); font-weight: 600; }
+.gh-link { color: var(--muted); text-transform: none; transition: color 0.3s; }
+.gh-link:hover { color: var(--accent); }
+.gh-scroll { margin-top: 1.25rem; overflow-x: auto; scrollbar-width: none; }
+.gh-scroll::-webkit-scrollbar { display: none; }
+.gh-scroll:focus-visible { outline-offset: 6px; }
+.gh-cal {
+  display: grid;
+  grid-template-columns: 2.2rem repeat(var(--weeks, 53), var(--c));
+  grid-template-rows: 1.2rem repeat(7, var(--c));
+  gap: var(--g);
+  width: max-content;
+}
+.gh-month, .gh-day {
+  font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--muted);
+  line-height: 1; white-space: nowrap; align-self: center;
+}
+.gh-month { grid-row: 1; align-self: start; }
+.gh-day { grid-column: 1; }
+.gh-cell, .gh-legend i {
+  display: block; width: var(--c); height: var(--c); border-radius: 3px;
+  background: rgba(241, 240, 234, 0.06);
+}
+.gh-cell[data-level="1"], .gh-legend i[data-level="1"] { background: color-mix(in srgb, var(--accent) 30%, #0b0a12); }
+.gh-cell[data-level="2"], .gh-legend i[data-level="2"] { background: color-mix(in srgb, var(--accent) 55%, #0b0a12); }
+.gh-cell[data-level="3"], .gh-legend i[data-level="3"] { background: color-mix(in srgb, var(--accent) 80%, #0b0a12); }
+.gh-cell[data-level="4"], .gh-legend i[data-level="4"] { background: var(--accent); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent); }
+.gh-cell { transition: transform 0.25s var(--ease-out); }
+/* поява хвилею: тиждень за тижнем зліва направо */
+.gh-cal.is-waiting .gh-cell { opacity: 0; transform: scale(0); }
+.gh-cal.is-in:not(.is-done) .gh-cell { animation: gh-pop 0.5s var(--ease-out) backwards; animation-delay: calc(var(--w, 0) * 18ms); }
+@keyframes gh-pop { from { opacity: 0; transform: scale(0); } }
+.gh-cell:hover { transform: scale(1.35); outline: 1px solid rgba(241, 240, 234, 0.6); outline-offset: 1px; }
+.gh-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem 2rem; margin-top: 1rem; color: var(--muted); font-size: 0.66rem; text-transform: none; }
+.gh-legend { display: flex; align-items: center; gap: var(--g); }
+.gh-less { margin-right: 0.4rem; }
+.gh-more { margin-left: 0.4rem; }
+.gh-tip {
+  position: fixed; z-index: 260; pointer-events: none;
+  padding: 0.45rem 0.65rem; border-radius: 8px; background: #f1f0ea; color: #07060c;
+  font-family: var(--font-mono); font-size: 0.7rem; white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 10px)); opacity: 0; transition: opacity 0.15s;
+}
+.gh-tip.is-shown { opacity: 1; }
+@media (max-width: 700px) {
+  .gh { --c: 11px; max-width: 100%; }
+}
+
 /* Підвал */
 .site-footer { flex-wrap: wrap; gap: 1rem 2rem; }
 .footer-link { transition: color 0.3s; }

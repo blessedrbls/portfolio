@@ -302,6 +302,7 @@ function applyLang(lang) {
 
   $$('[data-lang]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === currentLang)));
   try { localStorage.setItem('lang', currentLang); } catch (e) { /* приватний режим */ }
+  if (ghData) renderGithub(); // підписи активності GitHub — мовою сайту
 }
 
 function initLangSwitch() {
@@ -2215,6 +2216,137 @@ function initZoom() {
   dlg.addEventListener('close', () => { lenis?.start(); opener?.focus(); });
 }
 
+/* =========================================================
+   Активність на GitHub (у «Контактах»)
+   Дані беремо наживо з публічного API (той самий графік, що в профілі GitHub; оновлюється ~щогодини).
+   Якщо сервіс не відповів — показуємо знімок data/github-contributions.json (оновлення: node tools/github-snapshot.mjs).
+   ========================================================= */
+const GH_USER = 'blessedrbls';
+const GH_API = `https://github-contributions-api.jogruber.de/v4/${GH_USER}?y=last`;
+let ghData = null;
+let ghLive = false;
+let ghAnimated = false;
+
+async function loadGithub() {
+  if (ghData) return ghData;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 5000);
+    const r = await fetch(GH_API, { signal: ctl.signal });
+    clearTimeout(timer);
+    if (!r.ok) throw new Error(String(r.status));
+    ghData = await r.json();
+    ghLive = true;
+  } catch (e) {
+    try { ghData = await (await fetch('data/github-contributions.json')).json(); } catch (err) { ghData = null; }
+  }
+  return ghData;
+}
+
+const GH_TEXT = {
+  uk: {
+    months: ['Січ', 'Лют', 'Бер', 'Кві', 'Тра', 'Чер', 'Лип', 'Сер', 'Вер', 'Жов', 'Лис', 'Гру'],
+    days: ['', 'Пн', '', 'Ср', '', 'Пт', ''],
+    title: (n) => `<b>${n}</b> ${n % 10 === 1 && n % 100 !== 11 ? 'внесок' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'внески' : 'внесків')} на GitHub за останній рік`,
+    tip: (n, d) => `${n || 'Немає'} ${n === 0 ? 'внесків' : (n % 10 === 1 && n % 100 !== 11 ? 'внесок' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'внески' : 'внесків'))} · ${d}`,
+    less: 'Менше', more: 'Більше',
+    live: 'Оновлюється автоматично з GitHub', snap: 'Знімок із GitHub',
+  },
+  en: {
+    months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    days: ['', 'Mon', '', 'Wed', '', 'Fri', ''],
+    title: (n) => `<b>${n}</b> contribution${n === 1 ? '' : 's'} on GitHub in the last year`,
+    tip: (n, d) => `${n || 'No'} contribution${n === 1 ? '' : 's'} · ${d}`,
+    less: 'Less', more: 'More',
+    live: 'Updates automatically from GitHub', snap: 'Snapshot from GitHub',
+  },
+};
+
+function renderGithub() {
+  const box = $('#github-activity');
+  if (!box || !ghData?.contributions?.length) return;
+  const T = GH_TEXT[currentLang] || GH_TEXT.uk;
+  const days = ghData.contributions;
+  const total = ghData.total?.lastYear ?? days.reduce((s, d) => s + d.count, 0);
+  const fmt = new Intl.DateTimeFormat(currentLang === 'en' ? 'en-GB' : 'uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Тижні йдуть стовпчиками, неділя — зверху (як на GitHub)
+  const first = new Date(`${days[0].date}T00:00:00`);
+  const pad = first.getDay();
+  const weeks = Math.ceil((pad + days.length) / 7);
+  const parts = [];
+  T.days.forEach((label, row) => { if (label) parts.push(`<span class="gh-day" style="grid-row:${row + 2}">${label}</span>`); });
+  let lastMonth = -1;
+  days.forEach((d, i) => {
+    const pos = pad + i;
+    const week = Math.floor(pos / 7);
+    const row = pos % 7;
+    const date = new Date(`${d.date}T00:00:00`);
+    // підпис місяця — над першим тижнем, що починається в новому місяці (і не впритул до кінця)
+    if (row === 0 && date.getMonth() !== lastMonth && week < weeks - 2) {
+      lastMonth = date.getMonth();
+      parts.push(`<span class="gh-month" style="grid-column:${week + 2} / span 4">${T.months[lastMonth]}</span>`);
+    }
+    parts.push(`<i class="gh-cell" data-level="${d.level}" data-tip="${T.tip(d.count, fmt.format(date))}" style="grid-row:${row + 2};grid-column:${week + 2};--w:${week}"></i>`);
+  });
+
+  const cal = $('.gh-cal', box);
+  cal.style.setProperty('--weeks', weeks);
+  cal.innerHTML = parts.join('');
+  if (ghAnimated) { cal.classList.remove('is-waiting'); cal.classList.add('is-in', 'is-done'); }
+  cal.setAttribute('aria-label', `${T.title(total).replace(/<\/?b>/g, '')}`);
+  $('.gh-title', box).innerHTML = T.title(total);
+  $('.gh-less', box).textContent = T.less;
+  $('.gh-more', box).textContent = T.more;
+  $('.gh-updated', box).textContent = ghLive ? T.live : T.snap;
+  box.hidden = false;
+
+  // На вузьких екранах — одразу до останніх тижнів
+  const sc = $('.gh-scroll', box);
+  sc.scrollLeft = sc.scrollWidth;
+
+  // Клітинки «загоряються» хвилею зліва направо, коли блок з'являється (CSS-анімація, один раз)
+  if (!ghAnimated && !REDUCED && 'IntersectionObserver' in window) {
+    ghAnimated = true;
+    cal.classList.add('is-waiting');
+    const io = new IntersectionObserver(([en]) => {
+      if (!en.isIntersecting) return;
+      io.disconnect();
+      cal.classList.remove('is-waiting');
+      cal.classList.add('is-in');
+    }, { rootMargin: '0px 0px -12% 0px' });
+    io.observe(cal);
+  }
+}
+
+// Підказка над клітинкою (дата й кількість)
+function initGithubTip() {
+  const box = $('#github-activity');
+  if (!box) return;
+  const tip = document.createElement('div');
+  tip.className = 'gh-tip';
+  tip.setAttribute('aria-hidden', 'true');
+  box.appendChild(tip);
+  box.addEventListener('pointerover', (e) => {
+    const c = e.target.closest('.gh-cell');
+    if (!c) { tip.classList.remove('is-shown'); return; }
+    const r = c.getBoundingClientRect();
+    tip.textContent = c.dataset.tip;
+    tip.style.left = `${r.left + r.width / 2}px`;
+    tip.style.top = `${r.top}px`;
+    tip.classList.add('is-shown');
+  });
+  box.addEventListener('pointerleave', () => tip.classList.remove('is-shown'));
+  window.addEventListener('scroll', () => tip.classList.remove('is-shown'), { passive: true });
+}
+
+function initGithub() {
+  if (!$('#github-activity')) return;
+  ghAnimated = false;
+  initGithubTip();
+  loadGithub().then(() => { renderGithub(); refreshScroll(); });
+}
+
 // Вміст кейсу (на старті й після кожного переходу без перезавантаження)
 function initCaseContent(swapped = false) {
   splitCaseText();
@@ -2257,6 +2389,7 @@ function initHomeContent(swapped = false) {
   initAnchors();
   initMagnetic();
   initScrollMotionPage();
+  initGithub();
 
   const start = () => {
     revealHero();
