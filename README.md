@@ -15,7 +15,7 @@ Personal portfolio of Oleksii, a web developer building websites, landing pages,
 - **Scroll storytelling.** Pinned hero with a letter-by-letter exit, a statement whose words light up as you scroll, and a process timeline whose line draws itself.
 - **Services.** Cards with a 3D tilt and a neon border that follows the cursor.
 - **Case studies.** Clicking a project card opens its own page (`work/<project>/`): the task, how it works, what was built, technical highlights, a screenshot gallery with full-screen zoom, and what it gives the business. The same sphere guide and starfield run there in the project's colour, with letter-by-letter titles, a cover that opens up on scroll, self-drawing lines and tilting cards. Pages are static HTML, so search engines index them, and the language choice carries over from the main page.
-- **Page transitions.** Moving between the home page and case studies plays a two-layer shutter in the project's colour with its name; the next page opens already covered and reveals itself as the sphere assembles. Pages are prefetched on hover, the browser Back button never gets stuck behind the shutter, and with reduced motion navigation is instant.
+- **Page transitions.** Moving between the home page and case studies plays a quick fade to black and back while the sphere assembles. Pages are prefetched on hover, the browser Back button never gets stuck on a black screen, and with reduced motion navigation is instant.
 - **Easter egg.** Type `hello` (or click the logo five times).
 - Preloader, custom cursor, magnetic buttons, smooth scrolling (Lenis), film grain.
 - **Two languages.** Ukrainian (default) and English, with a smooth switch.

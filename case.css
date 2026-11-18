@@ -399,23 +399,7 @@ main, .case-footer { position: relative; z-index: 2; }
 .case-btn .magnetic-inner { display: inline-flex; align-items: center; gap: 0.6rem; }
 .case-btn:hover { transform: none; }
 
-/* ---------- Перехід між сторінками («шторка») ---------- */
-html.pt-enter::after { content: ''; position: fixed; inset: 0; z-index: 400; background: #07060c; }
-.pt { position: fixed; inset: 0; z-index: 400; pointer-events: none; visibility: hidden; overflow: hidden; }
+/* ---------- Перехід між сторінками: швидке згасання в чорне ---------- */
+html.pt-enter::after { content: ''; position: fixed; inset: 0; z-index: 400; background: #000; }
+.pt { position: fixed; inset: 0; z-index: 400; background: #000; opacity: 0; pointer-events: none; visibility: hidden; }
 .pt.is-on { visibility: visible; pointer-events: auto; }
-.pt-a, .pt-b { position: absolute; inset: 0; will-change: transform; } /* зсув задає лише GSAP */
-.pt-a { background: var(--pt-tint, #a374ff); }
-.pt-b {
-  display: grid; place-items: center;
-  background: radial-gradient(70% 60% at 50% 110%, color-mix(in srgb, var(--pt-tint, #a374ff) 32%, transparent), transparent 70%), #07060c;
-}
-.pt-inner { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; padding: 0 1.25rem; text-align: center; }
-.pt-kicker {
-  font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--pt-tint, #a374ff);
-}
-.pt-title {
-  font-family: 'Unbounded', 'Arial Black', sans-serif; font-weight: 600; color: #f1f0ea;
-  font-size: clamp(2rem, 6.4vw, 5.6rem); line-height: 1.04; letter-spacing: -0.045em; max-width: 14ch; text-wrap: balance;
-}
-.pt-kicker:empty { display: none; }

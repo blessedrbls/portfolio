@@ -365,9 +365,14 @@ function initScroll() {
 
   window.ScrollTrigger.config({ ignoreMobileResize: true });
 
-  // Плавний інерційний скрол колесом/тачпадом. На телефонах — нативний (там він і так плавний).
+  // Mac: тачпад і Magic Mouse і так прокручують плавно з інерцією — «згладжування» поверх них
+  // відчувається як затримка й опір («туго»). Там лишаємо звичайний скрол браузера.
+  const IS_MAC = /Mac/i.test(navigator.userAgentData?.platform || navigator.platform || '');
+  if (IS_MAC) return;
+
+  // Windows / Linux, колесо миші: плавний скрол замість ривків по 100 px. На телефонах — нативний.
   lenis = new window.Lenis({
-    lerp: 0.1,           // м'якість: менше — довше «пливе», більше — різкіше
+    lerp: 0.16,          // м'якість: менше — довше «пливе», більше — різкіше (0.16 — швидко відгукується)
     wheelMultiplier: 1,
     smoothWheel: true,
     syncTouch: false,
@@ -1804,12 +1809,11 @@ function initGrain() {
 }
 
 /* =========================================================
-   Перехід між сторінками («шторка»): головна ⇄ кейси.
-   Ідемо: знизу виїжджає смуга кольору проєкту, за нею — темна шторка з назвою, і лише тоді переходимо.
-   Приходимо: сторінка вже закрита такою самою шторкою (клас pt-enter з <head>), вона їде вгору.
+   Перехід між сторінками: головна ⇄ кейси.
+   Ідемо: сторінка швидко гасне в чорне (~0.25 с) і лише тоді переходимо.
+   Приходимо: сторінка вже чорна (клас pt-enter з <head>) і так само швидко проявляється.
    ========================================================= */
 const PT_KEY = 'pt';
-const langNow = () => (html.lang === 'en' ? 'en' : 'uk');
 
 function ptEl() {
   let el = $('.pt');
@@ -1817,61 +1821,43 @@ function ptEl() {
     el = document.createElement('div');
     el.className = 'pt';
     el.setAttribute('aria-hidden', 'true');
-    el.innerHTML = '<div class="pt-a"></div><div class="pt-b"><div class="pt-inner"><span class="pt-kicker"></span><span class="pt-title"></span></div></div>';
     document.body.appendChild(el);
   }
   return el;
 }
 
-function ptFill(el, { tint, title, kicker }) {
-  el.style.setProperty('--pt-tint', tint || '#a374ff');
-  $('.pt-title', el).textContent = title || '';
-  $('.pt-kicker', el).textContent = kicker || '';
-}
-
-// Звичайний клік лівою кнопкою без модифікаторів — тоді робимо перехід зі шторкою
+// Звичайний клік лівою кнопкою без модифікаторів — тоді робимо плавний перехід
 const ptPlainClick = (e) => !(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
 
-function navigateWithTransition(href, info) {
+function navigateWithTransition(href) {
   if (REDUCED || !HAS_GSAP) { location.href = href; return; }
-  const { gsap } = window;
   const el = ptEl();
-  ptFill(el, info);
   el.classList.add('is-on');
   lenis?.stop();
-  try { sessionStorage.setItem(PT_KEY, JSON.stringify({ ...info, t: Date.now() })); } catch (e) { /* приватний режим — просто без шторки на новій сторінці */ }
-  gsap.timeline()
-    .fromTo($('.pt-a', el), { yPercent: 100 }, { yPercent: 0, duration: 0.42, ease: 'power3.inOut' }, 0)
-    .fromTo($('.pt-b', el), { yPercent: 100 }, { yPercent: 0, duration: 0.42, ease: 'power3.inOut' }, 0.06)
-    .fromTo($$('.pt-kicker, .pt-title', el), { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.35, ease: 'expo.out', stagger: 0.04 }, 0.22)
-    .call(() => { location.href = href; }, null, 0.48);
+  try { sessionStorage.setItem(PT_KEY, JSON.stringify({ t: Date.now() })); } catch (e) { /* приватний режим — без проявлення на новій сторінці */ }
+  window.gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.in', onComplete: () => { location.href = href; } });
 }
 
-// Якщо прийшли зі шторкою — показуємо її закритою й повертаємо функцію, що її відкриє
+// Якщо прийшли з переходом — сторінка чорна; повертаємо функцію, що її проявить
 function enterTransition() {
   if (!html.classList.contains('pt-enter')) return null;
   let info = null;
   try { info = JSON.parse(sessionStorage.getItem(PT_KEY) || 'null'); sessionStorage.removeItem(PT_KEY); } catch (e) { /* ignore */ }
   if (REDUCED || !HAS_GSAP || !info) { html.classList.remove('pt-enter'); return null; }
-  const { gsap } = window;
   const el = ptEl();
-  ptFill(el, info);
   el.classList.add('is-on');
-  gsap.set([$('.pt-a', el), $('.pt-b', el)], { yPercent: 0 });
+  window.gsap.set(el, { opacity: 1 });
   html.classList.remove('pt-enter');
-  return () => gsap.timeline({ onComplete: () => el.classList.remove('is-on') })
-    .to($$('.pt-kicker, .pt-title', el), { yPercent: -50, opacity: 0, duration: 0.25, ease: 'power2.in', stagger: 0.03 }, 0)
-    .to($('.pt-b', el), { yPercent: -100, duration: 0.6, ease: 'power3.inOut' }, 0.05)
-    .to($('.pt-a', el), { yPercent: -100, duration: 0.6, ease: 'power3.inOut' }, 0.12);
+  return () => window.gsap.to(el, { opacity: 0, duration: 0.4, ease: 'power2.out', onComplete: () => el.classList.remove('is-on') });
 }
 
-// Кнопка «Назад» браузера повертає сторінку з кешу разом із закритою шторкою — відкриваємо її
+// Кнопка «Назад» браузера повертає сторінку з кешу чорною — проявляємо її
 window.addEventListener('pageshow', (e) => {
   if (!e.persisted) return;
   html.classList.remove('pt-enter');
   const el = $('.pt');
   if (el) {
-    if (HAS_GSAP) window.gsap.set($$('.pt-a, .pt-b', el), { yPercent: 100 });
+    if (HAS_GSAP) window.gsap.set(el, { opacity: 0 });
     el.classList.remove('is-on');
   }
   lenis?.start();
@@ -1903,25 +1889,24 @@ function initHomeTransitions() {
     const p = PROJECTS[[...track.children].indexOf(a.closest('.project-card'))];
     if (!p) return;
     e.preventDefault();
-    const l = langNow();
-    navigateWithTransition(a.href, { tint: p.tint, title: p.title[l], kicker: l === 'en' ? `${p.type.en} · case study` : `${p.type.uk} · кейс` });
+    navigateWithTransition(a.href);
   });
 }
 
 // Кейс: «Усі роботи», логотип → головна; «Наступний проєкт» → наступний кейс
 function initCaseTransitions() {
-  const home = (a, title) => {
+  const home = (a) => {
     ptPrefetch(a);
     a.addEventListener('click', (e) => {
       if (!ptPlainClick(e)) return;
       e.preventDefault();
-      navigateWithTransition(a.href, { tint: '#a374ff', title: title[langNow()], kicker: '' });
+      navigateWithTransition(a.href);
     });
   };
   const back = $('.case-header .back');
   const logo = $('.case-header .logo');
-  if (back) home(back, { uk: 'Усі роботи', en: 'All work' });
-  if (logo) home(logo, { uk: 'oleksii*', en: 'oleksii*' });
+  if (back) home(back);
+  if (logo) home(logo);
 
   const next = $('.case-next');
   if (next) {
@@ -1929,9 +1914,7 @@ function initCaseTransitions() {
     next.addEventListener('click', (e) => {
       if (!ptPlainClick(e)) return;
       e.preventDefault();
-      const l = langNow();
-      const name = $(`.case-next-name [data-l="${l}"]`, next)?.dataset.text || '';
-      navigateWithTransition(next.href, { tint: next.dataset.tint, title: name, kicker: l === 'en' ? 'Next project' : 'Наступний проєкт' });
+      navigateWithTransition(next.href);
     });
   }
 }
