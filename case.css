@@ -206,7 +206,23 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
 .gallery { display: grid; gap: 1.25rem; }
 .gallery + .gallery { margin-top: 1.25rem; }
 .gallery-wide { grid-template-columns: minmax(0, 1fr); }
-.gallery-phones { grid-template-columns: repeat(auto-fill, minmax(min(11rem, 40vw), 1fr)); }
+/* Телефони: рівні ряди без «сиріт». Кількість скринів — у data-n (з build-cases.mjs):
+   до 5 — усі в один ряд; 6 — по 3 (на широких екранах по 6); 7–8 — по 4. Ширина одного — не більше ~15rem */
+.gallery-phones {
+  --cols: var(--n, 4);
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  max-width: calc(var(--cols) * 15rem + (var(--cols) - 1) * 1.25rem);
+}
+.gallery-phones[data-n="1"] { --n: 1; }
+.gallery-phones[data-n="2"] { --n: 2; }
+.gallery-phones[data-n="3"] { --n: 3; }
+.gallery-phones[data-n="4"] { --n: 4; }
+.gallery-phones[data-n="5"] { --n: 5; }
+.gallery-phones[data-n="6"] { --cols: 3; }
+.gallery-phones[data-n="7"], .gallery-phones[data-n="8"] { --cols: 4; }
+@media (min-width: 1100px) {
+  .gallery-phones[data-n="6"] { --cols: 6; }
+}
 .gallery-chats { display: block; columns: 3 17rem; column-gap: 1.25rem; }
 .gallery-chats .shot { break-inside: avoid; margin-bottom: 1.25rem; }
 .shot-btn {
@@ -285,7 +301,7 @@ main { max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
 }
 @media (max-width: 560px) {
   .case-header { gap: 1rem; }
-  .gallery-phones { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gallery-phones { --cols: 2 !important; max-width: none; }
   .gallery-chats { columns: 1; }
   .flow li { grid-template-columns: 2.5rem 1fr; }
   .case-actions .case-btn { flex: 1 1 auto; justify-content: center; }

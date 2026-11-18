@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { CASES } from './cases-data.mjs';
 
 const SITE = 'https://blessedrbls.github.io/portfolio/';
-const V = 9; // кеш-бастинг для case.css — збільшуй при змінах
+const V = 10; // кеш-бастинг для case.css — збільшуй при змінах
 // main.js спільний із головною: беремо ту саму версію, що й в index.html
 const MAIN_V = (readFileSync('index.html', 'utf8').match(/main\.js\?v=(\d+)/) || [])[1] || '1';
 
@@ -77,7 +77,7 @@ function page(c, i) {
   ].filter(Boolean).join('\n          ');
 
   const gallery = c.gallery.map((g) => `
-        <div class="gallery gallery-${g.layout}">${g.items.map(([name, alt]) => {
+        <div class="gallery gallery-${g.layout}"${g.layout === 'phones' ? ` data-n="${g.items.length}"` : ''}>${g.items.map(([name, alt]) => {
           const src = `images/cases/${c.slug}/${name}.webp`;
           const [w, h] = webpSize(src);
           return `
