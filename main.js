@@ -1640,6 +1640,12 @@ async function initHero3D() {
     },
     hyper(seconds = 1.8) { hyper = seconds; lastActive = performance.now(); }, // ривок крізь зорі
   };
+  // прийшли з іншої сторінки «стрибком» — влітаємо на швидкості, зорі гальмують
+  if (window.__ptHyper) {
+    hyper = window.__ptHyper;
+    window.__ptHyper = 0;
+    uniforms.uIntro.value = Math.max(uniforms.uIntro.value, 0.45); // зорі видно одразу, не з нуля
+  }
 
   const lerp = THREE.MathUtils.lerp;
   const frame = () => {
@@ -1809,57 +1815,48 @@ function initGrain() {
 }
 
 /* =========================================================
-   Перехід між сторінками: головна ⇄ кейси.
-   Ідемо: сторінка швидко гасне в чорне (~0.12 с) і лише тоді переходимо.
-   Приходимо: сторінка вже чорна (клас pt-enter з <head>) і так само швидко проявляється.
+   Перехід між сторінками: «стрибок крізь зорі».
+   Ідемо: текст сторінки розчиняється, зорі розганяються в світлові штрихи, сфера розлітається —
+   і ми переходимо. Приходимо: влітаємо на швидкості, штрихи гальмують, сфера збирається, текст проявляється.
    ========================================================= */
 const PT_KEY = 'pt';
+// Усе, крім 3D-полотна із зорями, курсора й зерна (у нього своя прозорість 4 %): саме це гасне й проявляється
+const ptContent = () => $$('body > *').filter((el) => !el.matches('.hero-canvas, .cursor, .grain, script, link, style'));
 
-function ptEl() {
-  let el = $('.pt');
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'pt';
-    el.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(el);
-  }
-  return el;
-}
-
-// Звичайний клік лівою кнопкою без модифікаторів — тоді робимо плавний перехід
+// Звичайний клік лівою кнопкою без модифікаторів — тоді робимо перехід
 const ptPlainClick = (e) => !(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey);
 
 function navigateWithTransition(href) {
   if (REDUCED || !HAS_GSAP) { location.href = href; return; }
-  const el = ptEl();
-  el.classList.add('is-on');
+  const { gsap } = window;
   lenis?.stop();
-  try { sessionStorage.setItem(PT_KEY, JSON.stringify({ t: Date.now() })); } catch (e) { /* приватний режим — без проявлення на новій сторінці */ }
-  window.gsap.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: 'power1.in', onComplete: () => { location.href = href; } });
+  try { sessionStorage.setItem(PT_KEY, JSON.stringify({ t: Date.now() })); } catch (e) { /* приватний режим — нова сторінка просто з'явиться */ }
+  window.__sphere?.hyper(2);     // зорі — у штрихи
+  window.__sphere?.burst(1.1);   // сфера розлітається на частинки
+  gsap.to(ptContent(), { opacity: 0, duration: 0.3, ease: 'power2.in' });
+  gsap.delayedCall(0.38, () => { location.href = href; });
 }
 
-// Якщо прийшли з переходом — сторінка чорна; повертаємо функцію, що її проявить
+// Якщо прийшли з переходом — текст схований; повертаємо функцію, що його проявить.
+// Гальмування зірок запускає initHero3D (window.__ptHyper), щойно сцена готова.
 function enterTransition() {
   if (!html.classList.contains('pt-enter')) return null;
   let info = null;
   try { info = JSON.parse(sessionStorage.getItem(PT_KEY) || 'null'); sessionStorage.removeItem(PT_KEY); } catch (e) { /* ignore */ }
   if (REDUCED || !HAS_GSAP || !info) { html.classList.remove('pt-enter'); return null; }
-  const el = ptEl();
-  el.classList.add('is-on');
-  window.gsap.set(el, { opacity: 1 });
+  const { gsap } = window;
+  const content = ptContent();
+  gsap.set(content, { opacity: 0 });
   html.classList.remove('pt-enter');
-  return () => window.gsap.to(el, { opacity: 0, duration: 0.22, ease: 'power1.out', onComplete: () => el.classList.remove('is-on') });
+  window.__ptHyper = 1.1;
+  return () => gsap.to(content, { opacity: 1, duration: 0.5, ease: 'power2.out', clearProps: 'opacity' });
 }
 
-// Кнопка «Назад» браузера повертає сторінку з кешу чорною — проявляємо її
+// Кнопка «Назад» браузера повертає сторінку з кешу з розчиненим текстом — повертаємо його
 window.addEventListener('pageshow', (e) => {
   if (!e.persisted) return;
   html.classList.remove('pt-enter');
-  const el = $('.pt');
-  if (el) {
-    if (HAS_GSAP) window.gsap.set(el, { opacity: 0 });
-    el.classList.remove('is-on');
-  }
+  if (HAS_GSAP) window.gsap.set(ptContent(), { opacity: 1, clearProps: 'opacity' });
   lenis?.start();
 });
 

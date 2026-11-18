@@ -1211,7 +1211,5 @@ html.preview-open { overflow: hidden; }
   .grain { animation: none; }
 }
 
-/* ---------- Перехід між сторінками: швидке згасання в чорне ---------- */
-html.pt-enter::after { content: ''; position: fixed; inset: 0; z-index: 400; background: #000; }
-.pt { position: fixed; inset: 0; z-index: 400; background: #000; opacity: 0; pointer-events: none; visibility: hidden; }
-.pt.is-on { visibility: visible; pointer-events: auto; }
+/* ---------- Перехід між сторінками («стрибок крізь зорі»): текст схований, доки main.js його не проявить ---------- */
+html.pt-enter body > *:not(.hero-canvas):not(.grain) { opacity: 0; }
