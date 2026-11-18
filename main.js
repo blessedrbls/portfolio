@@ -18,6 +18,7 @@ const PROJECTS = [
     kind: 'miniapp',
     motif: 'cup',
     image: 'images/coffee-miniapp.webp',
+    imageUk: 'images/coffee-miniapp-uk.webp', // скрини українською — показуються, коли сайт українською
     case: 'work/coffee-miniapp/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#d9a066',
     type: { uk: 'Mini App', en: 'Mini App' },
@@ -51,6 +52,7 @@ const PROJECTS = [
     kind: 'site',
     motif: 'barber',
     image: 'images/barbershop-site.webp',
+    imageUk: 'images/barbershop-site-uk.webp', // скрини українською — показуються, коли сайт українською
     case: 'work/barbershop-site/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#d4b05a',
     type: { uk: 'Сайт', en: 'Website' },
@@ -68,6 +70,7 @@ const PROJECTS = [
     kind: 'site',
     motif: 'play',
     image: 'images/landing-course.webp',
+    imageUk: 'images/landing-course-uk.webp', // скрини українською — показуються, коли сайт українською
     case: 'work/landing-course/', // сторінка-кейс (генерується tools/build-cases.mjs)
     tint: '#4c7dff',
     type: { uk: 'Лендінг', en: 'Landing page' },
@@ -791,7 +794,7 @@ function renderProjects() {
       <div class="project-media">
         <div class="project-media-inner">
           ${p.image
-            ? `<img src="${esc(p.image)}" srcset="${esc(p.image.replace('.webp', '-1000.webp'))} 1000w, ${esc(p.image)} 1600w" sizes="(max-width: 900px) min(84vw, 26rem), clamp(18rem, 31vw, 32rem)" width="1600" height="1000" alt="" loading="lazy" decoding="async" data-ph="${i}">`
+            ? (p.imageUk ? [['uk', p.imageUk], ['en', p.image]] : [[null, p.image]]).map(([l, src]) => `<img${l ? ` data-l="${l}"` : ''} src="${esc(src)}" srcset="${esc(src.replace('.webp', '-1000.webp'))} 1000w, ${esc(src)} 1600w" sizes="(max-width: 900px) min(84vw, 26rem), clamp(18rem, 31vw, 32rem)" width="1600" height="1000" alt="" loading="lazy" decoding="async" data-ph="${i}">`).join('')
             : placeholderSVG(p, i)}
         </div>
       </div>
@@ -2069,7 +2072,7 @@ function initCaseFx() {
       clipPath: 'inset(0% 0% 0% 0% round 26px)', y: 0, ease: 'none',
       scrollTrigger: { trigger: cover, start: 'top bottom', end: 'top 30%', scrub: 0.6 },
     });
-    gsap.fromTo($('img', cover), { scale: 1.22 }, {
+    gsap.fromTo($$('img', cover), { scale: 1.22 }, { // обидві версії (укр / англ)
       scale: 1, ease: 'none',
       scrollTrigger: { trigger: cover, start: 'top bottom', end: 'bottom top', scrub: 0.6 },
     });
@@ -2184,21 +2187,25 @@ function initTilt(selector) {
   });
 }
 
+// Картинка, яку зараз видно (на скриншоті може бути дві — українською й англійською)
+const visibleImg = (root) => $$('img', root).find((i) => getComputedStyle(i).display !== 'none') || $('img', root);
+
 // Перегляд скриншота на весь екран (<dialog>: Esc закриває, фокус повертається)
 function initZoom() {
   const dlg = $('.zoom');
   if (!dlg || typeof dlg.showModal !== 'function') {
-    $$('[data-zoom]').forEach((b) => b.addEventListener('click', () => window.open(b.dataset.zoom, '_blank')));
+    $$('[data-zoom]').forEach((b) => b.addEventListener('click', () => window.open(visibleImg(b)?.currentSrc || b.dataset.zoom, '_blank')));
     return;
   }
   const big = $('img', dlg);
   let opener = null;
   $$('[data-zoom]').forEach((btn) => btn.addEventListener('click', () => {
     opener = btn;
-    big.src = btn.dataset.zoom;
-    big.width = +btn.dataset.w;
-    big.height = +btn.dataset.h;
-    big.alt = $('img', btn)?.alt || '';
+    const img = visibleImg(btn);
+    big.src = img?.currentSrc || img?.src || btn.dataset.zoom;
+    big.width = +(img?.getAttribute('width') || btn.dataset.w);
+    big.height = +(img?.getAttribute('height') || btn.dataset.h);
+    big.alt = img?.alt || '';
     dlg.showModal();
     lenis?.stop();
     if (HAS_GSAP && !REDUCED) window.gsap.fromTo(big, { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'expo.out' });

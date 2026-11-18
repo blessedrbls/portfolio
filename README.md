@@ -53,11 +53,11 @@ Then open http://localhost:8000.
 
 ## Editing projects
 
-Projects are defined in the `PROJECTS` array at the top of `main.js`: title and description in Ukrainian and English, tags, image, tint colour, demo and code links, an optional `preview` (`phone` or `desktop`) for the live demo frame, and a `case` link. Cover images live in `images/` as 1600×1000 `.webp`, with a 1000 px wide `-1000.webp` copy for phones.
+Projects are defined in the `PROJECTS` array at the top of `main.js`: title and description in Ukrainian and English, tags, image, tint colour, demo and code links, an optional `preview` (`phone` or `desktop`) for the live demo frame, and a `case` link. Cover images live in `images/` as 1600×1000 `.webp`, with a 1000 px wide `-1000.webp` copy for phones. Projects can also have `imageUk` (Ukrainian UI); the site shows the screenshot in the visitor's language.
 
 ## Case study pages
 
-Case texts (both languages) live in `tools/cases-data.mjs`, and screenshots in `images/cases/<project>/`. After editing either, regenerate the pages and `sitemap.xml`:
+Case texts (both languages) live in `tools/cases-data.mjs`, and screenshots in `images/cases/<project>/`. A `<name>-uk.webp` next to a screenshot is its Ukrainian version and is shown when the site is in Ukrainian. After editing either, regenerate the pages and `sitemap.xml`:
 
 ```bash
 node tools/build-cases.mjs

@@ -38,13 +38,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;900&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
-  <link rel="stylesheet" href="../../case.css?v=10">
+  <link rel="stylesheet" href="../../case.css?v=11">
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" } }</script>
   <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js" crossorigin>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
   <script defer src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
-  <script type="module" src="../../main.js?v=61"></script>
+  <script type="module" src="../../main.js?v=62"></script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"CreativeWork","name":"Online course landing page","alternateName":"Лендінг онлайн-курсу","description":"A landing page for the “Python from scratch in 8 weeks” course that takes visitors from the first screen to sign-up: curriculum, pricing, reviews, FAQ and a countdown to the start.","url":"https://blessedrbls.github.io/portfolio/work/landing-course/","image":"https://blessedrbls.github.io/portfolio/images/landing-course.webp","dateCreated":"2026","keywords":"HTML, CSS, JavaScript, IntersectionObserver","author":{"@type":"Person","name":"Oleksii","url":"https://blessedrbls.github.io/portfolio/"},"codeRepository":"https://github.com/blessedrbls/landing-course"}</script>
   <!-- Статистика відвідувань (GoatCounter: без cookie, ~3 КБ). Кліки рахуються через data-goatcounter-click -->
   <script data-goatcounter="https://blessedrbls.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
@@ -88,7 +88,8 @@
     </section>
 
     <figure class="case-cover">
-      <img src="../../images/landing-course.webp" srcset="../../images/landing-course-1000.webp 1000w, ../../images/landing-course.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="1000" alt="" fetchpriority="high">
+      <img data-l="uk" src="../../images/landing-course-uk.webp" srcset="../../images/landing-course-uk-1000.webp 1000w, ../../images/landing-course-uk.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="1000" alt="" fetchpriority="high">
+      <img data-l="en" src="../../images/landing-course.webp" srcset="../../images/landing-course-1000.webp 1000w, ../../images/landing-course.webp 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="1600" height="1000" alt="" fetchpriority="high">
     </figure>
 
     <section class="case-block" id="s-task" aria-labelledby="h-task">
@@ -143,19 +144,22 @@
         <div class="gallery gallery-wide">
           <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/landing-course/desktop-top.webp" data-w="1400" data-h="875" aria-label="Збільшити: Перший екран" data-label-uk="Збільшити: Перший екран" data-label-en="Enlarge: First screen">
-              <img src="../../images/cases/landing-course/desktop-top.webp" width="1400" height="875" alt="Перший екран" data-alt-uk="Перший екран" data-alt-en="First screen" loading="lazy" decoding="async">
+              <img data-l="uk" src="../../images/cases/landing-course/desktop-top-uk.webp" width="1400" height="875" alt="Перший екран" loading="lazy" decoding="async">
+              <img data-l="en" src="../../images/cases/landing-course/desktop-top.webp" width="1400" height="875" alt="First screen" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Перший екран</span><span data-l="en">First screen</span></figcaption>
           </figure>
           <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/landing-course/desktop-program.webp" data-w="1400" data-h="875" aria-label="Збільшити: Програма на 8 тижнів" data-label-uk="Збільшити: Програма на 8 тижнів" data-label-en="Enlarge: 8-week curriculum">
-              <img src="../../images/cases/landing-course/desktop-program.webp" width="1400" height="875" alt="Програма на 8 тижнів" data-alt-uk="Програма на 8 тижнів" data-alt-en="8-week curriculum" loading="lazy" decoding="async">
+              <img data-l="uk" src="../../images/cases/landing-course/desktop-program-uk.webp" width="1400" height="875" alt="Програма на 8 тижнів" loading="lazy" decoding="async">
+              <img data-l="en" src="../../images/cases/landing-course/desktop-program.webp" width="1400" height="875" alt="8-week curriculum" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Програма на 8 тижнів</span><span data-l="en">8-week curriculum</span></figcaption>
           </figure>
           <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/landing-course/desktop-pricing.webp" data-w="1400" data-h="875" aria-label="Збільшити: Тарифи" data-label-uk="Збільшити: Тарифи" data-label-en="Enlarge: Pricing">
-              <img src="../../images/cases/landing-course/desktop-pricing.webp" width="1400" height="875" alt="Тарифи" data-alt-uk="Тарифи" data-alt-en="Pricing" loading="lazy" decoding="async">
+              <img data-l="uk" src="../../images/cases/landing-course/desktop-pricing-uk.webp" width="1400" height="875" alt="Тарифи" loading="lazy" decoding="async">
+              <img data-l="en" src="../../images/cases/landing-course/desktop-pricing.webp" width="1400" height="875" alt="Pricing" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Тарифи</span><span data-l="en">Pricing</span></figcaption>
           </figure>
@@ -163,13 +167,15 @@
         <div class="gallery gallery-phones" data-n="2">
           <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/landing-course/mobile-top.webp" data-w="600" data-h="1300" aria-label="Збільшити: Перший екран на телефоні" data-label-uk="Збільшити: Перший екран на телефоні" data-label-en="Enlarge: First screen on a phone">
-              <img src="../../images/cases/landing-course/mobile-top.webp" width="600" height="1300" alt="Перший екран на телефоні" data-alt-uk="Перший екран на телефоні" data-alt-en="First screen on a phone" loading="lazy" decoding="async">
+              <img data-l="uk" src="../../images/cases/landing-course/mobile-top-uk.webp" width="600" height="1300" alt="Перший екран на телефоні" loading="lazy" decoding="async">
+              <img data-l="en" src="../../images/cases/landing-course/mobile-top.webp" width="600" height="1300" alt="First screen on a phone" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Перший екран на телефоні</span><span data-l="en">First screen on a phone</span></figcaption>
           </figure>
           <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../images/cases/landing-course/mobile-pricing.webp" data-w="600" data-h="1300" aria-label="Збільшити: Тарифи на телефоні" data-label-uk="Збільшити: Тарифи на телефоні" data-label-en="Enlarge: Pricing on a phone">
-              <img src="../../images/cases/landing-course/mobile-pricing.webp" width="600" height="1300" alt="Тарифи на телефоні" data-alt-uk="Тарифи на телефоні" data-alt-en="Pricing on a phone" loading="lazy" decoding="async">
+              <img data-l="uk" src="../../images/cases/landing-course/mobile-pricing-uk.webp" width="600" height="1300" alt="Тарифи на телефоні" loading="lazy" decoding="async">
+              <img data-l="en" src="../../images/cases/landing-course/mobile-pricing.webp" width="600" height="1300" alt="Pricing on a phone" loading="lazy" decoding="async">
             </button>
             <figcaption class="mono"><span data-l="uk">Тарифи на телефоні</span><span data-l="en">Pricing on a phone</span></figcaption>
           </figure>

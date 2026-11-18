@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { CASES } from './cases-data.mjs';
 
 const SITE = 'https://blessedrbls.github.io/portfolio/';
-const V = 10; // кеш-бастинг для case.css — збільшуй при змінах
+const V = 11; // кеш-бастинг для case.css — збільшуй при змінах
 // main.js спільний із головною: беремо ту саму версію, що й в index.html
 const MAIN_V = (readFileSync('index.html', 'utf8').match(/main\.js\?v=(\d+)/) || [])[1] || '1';
 
@@ -79,11 +79,18 @@ function page(c, i) {
   const gallery = c.gallery.map((g) => `
         <div class="gallery gallery-${g.layout}"${g.layout === 'phones' ? ` data-n="${g.items.length}"` : ''}>${g.items.map(([name, alt]) => {
           const src = `images/cases/${c.slug}/${name}.webp`;
+          const srcUk = `images/cases/${c.slug}/${name}-uk.webp`; // українська версія скриншота (якщо є)
           const [w, h] = webpSize(src);
+          const imgs = existsSync(srcUk)
+            ? [['uk', srcUk, alt.uk], ['en', src, alt.en]].map(([l, f, a]) => {
+              const [iw, ih] = webpSize(f);
+              return `<img data-l="${l}" src="../../${f}" width="${iw}" height="${ih}" alt="${esc(a)}" loading="lazy" decoding="async">`;
+            }).join('\n              ')
+            : `<img src="../../${src}" width="${w}" height="${h}" alt="${esc(alt.uk)}" data-alt-uk="${esc(alt.uk)}" data-alt-en="${esc(alt.en)}" loading="lazy" decoding="async">`;
           return `
           <figure class="shot">
             <button type="button" class="shot-btn" data-zoom="../../${src}" data-w="${w}" data-h="${h}" aria-label="${esc(UI.zoom.uk)}: ${esc(alt.uk)}" data-label-uk="${esc(UI.zoom.uk)}: ${esc(alt.uk)}" data-label-en="${esc(UI.zoom.en)}: ${esc(alt.en)}">
-              <img src="../../${src}" width="${w}" height="${h}" alt="${esc(alt.uk)}" data-alt-uk="${esc(alt.uk)}" data-alt-en="${esc(alt.en)}" loading="lazy" decoding="async">
+              ${imgs}
             </button>
             <figcaption class="mono">${both(alt)}</figcaption>
           </figure>`;
@@ -185,7 +192,7 @@ function page(c, i) {
     </section>
 
     <figure class="case-cover">
-      <img src="../../${esc(cover)}" srcset="../../${esc(cover.replace('.webp', '-1000.webp'))} 1000w, ../../${esc(cover)} 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="${cw}" height="${ch}" alt="" fetchpriority="high">
+      ${(p.imageUk && existsSync(p.imageUk) ? [['uk', p.imageUk], ['en', cover]] : [[null, cover]]).map(([l, src]) => `<img${l ? ` data-l="${l}"` : ''} src="../../${esc(src)}" srcset="../../${esc(src.replace('.webp', '-1000.webp'))} 1000w, ../../${esc(src)} 1600w" sizes="(max-width: 1200px) 100vw, 1200px" width="${cw}" height="${ch}" alt="" fetchpriority="high">`).join('\n      ')}
     </figure>
 
     <section class="case-block" id="s-task" aria-labelledby="h-task">
